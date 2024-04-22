@@ -1,0 +1,21 @@
+{
+  "name": "floors",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "cricklet <kenrick.rilee@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/react": "^18.2.74",
+    "@types/react-dom": "^18.2.23",
+    "@types/three": "^0.163.0",
+    "esbuild": "^0.20.2",
+    "jotai": "^2.7.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.4.3"
+  },
+  "scripts": {
+    "esbuild": "esbuild index.tsx --outfile=index.js --bundle --watch",
+    "tsc": "tsc -w --noEmit"
+  }
+}
