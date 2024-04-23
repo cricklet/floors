@@ -61,13 +61,26 @@ scene.addEdge(d, f);
 // scene.addEdge(b, h);
 // scene.addEdge(d, f);
 
-const flattened = flattenScene(scene);
-const regions = findRegions(flattened);
+function updateScenes(): [Scene, Map<string, Array<string>>] {
+  const flattened = flattenScene(scene);
+  const regions = findRegions(flattened);
+
+  return [flattened, regions];
+}
+
+let [flattened, regions] = updateScenes();
 
 let hoveredPoint: paper.Point | undefined = undefined;
 let selectedPoint: PointId | undefined = undefined;
 
+let currentGeneration = scene.generation();
+
 setInterval(() => {
+  if (currentGeneration !== scene.generation()) {
+    currentGeneration = scene.generation();
+    [flattened, regions] = updateScenes();
+  }
+
   clearRendering(paper1);
   renderEdges(paper1, scene);
   renderPoints(paper1, scene, { hoveredPoint, selectedPointId: selectedPoint });
@@ -102,12 +115,26 @@ paper1.view.onMouseMove = (event: paper.MouseEvent) => {
   }
 };
 
+let startDrag: paper.Point | undefined = undefined;
+let startPoint: paper.Point | undefined = undefined;
+
 paper1.view.onMouseDown = (event: paper.MouseEvent) => {
   selectedPoint = undefined;
+  hoveredPoint = undefined;
 
-  const { pointId } = findPoint(event.point);
+  const { pointId, point } = findPoint(event.point);
   if (pointId) {
-    console.log(`selected point: ${pointId}`);
     selectedPoint = pointId;
+  }
+
+  startDrag = event.point;
+  startPoint = point;
+};
+
+paper1.view.onMouseDrag = (event: paper.MouseEvent) => {
+  if (selectedPoint) {
+    const offset = event.point.subtract(startDrag!);
+    const newPoint = startPoint!.add(offset);
+    scene.setPoint(selectedPoint, newPoint);
   }
 };

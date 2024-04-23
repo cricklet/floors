@@ -132,7 +132,7 @@ export function renderEdges(scope: paper.PaperScope, scene: Scene) {
 
       const text = new paper.PointText(labelPoint);
       text.rotate(vector.angle, labelPoint);
-      text.fontSize = 4;
+      text.fontSize = 2;
       text.content = `${edge}`;
       text.justification = "center";
       scope.project.activeLayer.addChild(text);
