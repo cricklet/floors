@@ -29,7 +29,7 @@ export class Scene {
     this._generation ++;
 
     for (const [id, existingPoint] of this._points) {
-      if (existingPoint.equals(point)) {
+      if (existingPoint.getDistance(point) < 1) {
         return `${id}`;
       }
     }

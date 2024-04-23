@@ -48,9 +48,11 @@ function orderPoints(
   point1: paper.Point,
   point2: paper.Point
 ): [paper.Point, paper.Point] {
-  return point1.x < point2.x || (point1.x === point2.x && point1.y < point2.y)
-    ? [point1, point2]
-    : [point2, point1];
+  if (Math.abs(point1.x - point2.x) < 0.1) {
+    return point1.y < point2.y ? [point1, point2] : [point2, point1];
+  } else {
+    return point1.x < point2.x ? [point1, point2] : [point2, point1];
+  }
 }
 
 const POINT = ["#ccc", "#555"];

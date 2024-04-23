@@ -51,21 +51,35 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
   for (const [regionId, [cycle, path]] of regions) {
     let containsOtherCycle = false;
 
+    let cycleSet = new Set(cycle);
+
     for (const [otherRegionId, [otherCycle, _]] of regions) {
       if (regionId === otherRegionId) {
         continue;
       }
 
-      const allContained = otherCycle.every((otherPointId) => {
-        const otherPoint = scene.getPoint(otherPointId);
-        if (path.contains(otherPoint)) {
+      for (const otherPointId of otherCycle) {
+        if (cycleSet.has(otherPointId)) {
+          continue;
+        } else {
+          if (path.contains(scene.getPoint(otherPointId))) {
+            containsOtherCycle = true;
+            break;
+          }
+        }
+      }
+
+      const isSuperSet = otherCycle.every((otherPointId) => {
+        if (cycleSet.has(otherPointId)) {
           return true;
         }
-        return false;
       });
 
-      if (allContained) {
+      if (isSuperSet) {
         containsOtherCycle = true;
+      }
+
+      if (containsOtherCycle) {
         break;
       }
     }
@@ -74,6 +88,8 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
       minimalCycles.set(regionId, cycle);
     }
   }
+
+  console.log(`# of cycles ${minimalCycles.size}`);
 
   return minimalCycles;
 }

@@ -86,8 +86,10 @@ setInterval(() => {
   renderPoints(paper1, scene, { hoveredPoint, selectedPointId: selectedPoint });
 
   clearRendering(paper2);
-  renderRegions(paper2, regions, flattened);
+  // renderRegions(paper2, regions, flattened);
   renderEdges(paper2, flattened);
+  renderPoints(paper2, flattened, {});
+
 }, 1000 / 60);
 
 function findPoint(point: paper.Point): { pointId: PointId | undefined, point: paper.Point | undefined } {
