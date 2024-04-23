@@ -1,21 +1,13 @@
 import paper from "paper";
 import { findAllCycles } from "./cycles";
 import { EdgeId, PointId, Scene } from "./scene";
-import { FACE_COLORS } from "./render";
+import { faceColorForRegion } from "./render";
 
-export type RegionId = number;
-
-const _regionNameToId = new Map<string, RegionId>();
+export type RegionId = string;
 
 function regionIdForCycle(cycle: Array<PointId>): RegionId {
   const sorted = cycle.toSorted();
-  const regionName = sorted.join(",");
-
-  if (!_regionNameToId.has(regionName)) {
-    _regionNameToId.set(regionName, _regionNameToId.size);
-  }
-
-  return _regionNameToId.get(regionName)!;
+  return sorted.join(",");
 }
 
 function findCyclesInEdges(
@@ -49,9 +41,7 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
       path.add(scene.getPoint(pointId));
     }
     path.closed = true;
-    path.fillColor = new paper.Color(
-      FACE_COLORS[regionId % FACE_COLORS.length]
-    );
+    path.fillColor = new paper.Color(faceColorForRegion(regionId));
 
     regions.set(regionId, [cycle, path]);
   }

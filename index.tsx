@@ -40,15 +40,11 @@ scene.addEdge(d, f);
 const flattened = flattenScene(scene);
 const regions = findRegions(flattened);
 
-clearRendering();
-renderRegions(regions, flattened);
-renderEdges(flattened);
-
-// new paper.Path.Circle({
-//   center: new paper.Point(100, 100),
-//   radius: 50,
-//   fillColor: 'orange',
-// });
+setInterval(() => {
+  clearRendering();
+  renderRegions(regions, flattened);
+  renderEdges(flattened);
+}, 1000 / 60);
 
 // class HoverPointHint {
 //   hint: paper.Item | undefined;
