@@ -1,62 +1,24 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 
-class LinesCache {
-  private _paths: Map<EdgeId, [paper.Point, paper.Point, paper.Path]>;
-
-  constructor() {
-    this._paths = new Map();
-  }
-
-  lineInScene(
-    scene: Readonly<Scene>,
-    edgeId: EdgeId,
-    point1: PointId,
-    point2: PointId
-  ): paper.Path {
-    const point1Pos = scene.points().get(point1)!;
-    const point2Pos = scene.points().get(point2)!;
-    return this.line(edgeId, point1Pos, point2Pos);
-  }
-
-  line(edgeId: EdgeId, point1: paper.Point, point2: paper.Point): paper.Path {
-    if (this._paths.has(edgeId)) {
-      const [cachedPoint0, cachedPoint1, cachedPath] = this._paths.get(edgeId)!;
-      if (cachedPoint0.equals(point1) && cachedPoint1.equals(point2)) {
-        return cachedPath;
-      } else {
-        cachedPath.remove();
-        this._paths.delete(edgeId);
-      }
-    }
-
-    const path = new paper.Path.Line({
-      segments: [point1, point2],
-      insert: false,
-    });
-
-    this._paths.set(edgeId, [point1, point2, path]);
-    return path;
-  }
-}
-
-const linesCache = new LinesCache();
-
 function removeIntersectionOnce(scene: Scene, edgeId: EdgeId) {
   const [point1, point2] = scene.edges().get(edgeId)!;
-  const path = linesCache.lineInScene(scene, edgeId, point1, point2);
+  const path = new paper.Path.Line({
+    segments: [scene.getPoint(point1), scene.getPoint(point2)],
+    insert: false,
+  });
 
   for (const [otherId, [otherPoint1, otherPoint2]] of scene.edges()) {
     if (edgeId === otherId) {
       continue;
     }
 
-    const otherPath = linesCache.lineInScene(
-      scene,
-      otherId,
-      otherPoint1,
-      otherPoint2
-    );
+    // TODO: so much garbage collection
+    const otherPath = new paper.Path.Line({
+      segments: [scene.getPoint(otherPoint1), scene.getPoint(otherPoint2)],
+      insert: false,
+    });
+
     if (path.intersects(otherPath)) {
       const intersection = path.getIntersections(otherPath)[0].point;
       if (
