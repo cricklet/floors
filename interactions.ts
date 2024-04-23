@@ -1,6 +1,6 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
-import { findIntersections } from "./flatten";
+import { findEdgesSplitByPoint, findIntersections, splitEdge } from "./flatten";
 
 interface Dragging {
   kind: "dragging";
@@ -17,45 +17,48 @@ interface Idle {
 
 type State = Dragging | Idle;
 
-interface PotentialPoint {
-  pointId: PointId | undefined;
+interface PointTarget {
+  kind: "point";
   point: paper.Point;
-  edgesToSplit: Set<EdgeId>;
+  pointId: PointId;
+  edgesToSplit: Array<EdgeId>;
 }
+
+interface IntersectionTarget {
+  kind: "intersection";
+  point: paper.Point;
+  edgesToSplit: Array<EdgeId>;
+}
+
+type Target = PointTarget | IntersectionTarget;
 
 export type PointRenderState = "hovered" | "selected" | "selected-hovered";
 
-function findPoint(
-  scene: Scene,
-  point: paper.Point
-): {
-  pointId: PointId | undefined;
-  point: paper.Point | undefined;
-} {
+function findTarget(scene: Scene, point: paper.Point): Target | undefined {
   for (const [pointId, scenePoint] of scene.points()) {
     if (scenePoint.getDistance(point) < 5) {
       return {
+        kind: "point",
         pointId,
         point: scenePoint,
+        edgesToSplit: findEdgesSplitByPoint(scene, scenePoint),
       };
     }
   }
 
   const intersections: Map<paper.Point, Set<EdgeId>> = findIntersections(scene);
 
-  for (const [intersection, _] of intersections) {
+  for (const [intersection, edgesToSplit] of intersections) {
     if (intersection.getDistance(point) < 5) {
       return {
-        pointId: undefined,
+        kind: "intersection",
         point: intersection,
+        edgesToSplit: Array.from(edgesToSplit),
       };
     }
   }
 
-  return {
-    pointId: undefined,
-    point: undefined,
-  };
+  return undefined;
 }
 
 export class EditBehavior {
@@ -83,9 +86,11 @@ export class EditBehavior {
       hover: undefined,
     };
 
-    const { point } = findPoint(this.scene, event.point);
-    if (point) {
-      this.state.hover = point;
+    const target = findTarget(this.scene, event.point);
+    if (target?.kind === "point") {
+      this.state.hover = target.point;
+    } else if (target?.kind === "intersection") {
+      this.state.hover = target.point;
     }
   }
 
@@ -96,13 +101,27 @@ export class EditBehavior {
       hover: undefined,
     };
 
-    const { pointId, point } = findPoint(this.scene, event.point);
-    if (pointId && point) {
+    const target = findTarget(this.scene, event.point);
+    if (target?.kind === "point") {
+      for (const edgeId of target.edgesToSplit) {
+        splitEdge(this.scene, edgeId, target.pointId);
+      }
       this.state = {
         kind: "dragging",
         mouseStart: event.point,
-        pointStart: point,
-        selected: pointId,
+        pointStart: target.point,
+        selected: target.pointId,
+      };
+    } else if (target?.kind === "intersection") {
+      const intersectionPoint = this.scene.addPoint(target.point);
+      for (const edgeId of target.edgesToSplit) {
+        splitEdge(this.scene, edgeId, intersectionPoint);
+      }
+      this.state = {
+        kind: "dragging",
+        mouseStart: event.point,
+        pointStart: target.point,
+        selected: intersectionPoint,
       };
     }
   }
