@@ -48,6 +48,7 @@ const flattened = flattenScene(scene);
 const regions = findRegions(flattened);
 
 renderEdges(flattened);
+// renderEdges(scene);
 
 // new paper.Path.Circle({
 //   center: new paper.Point(100, 100),
@@ -100,3 +101,9 @@ renderEdges(flattened);
 // paperScope.view.onMouseDown = (event: paper.MouseEvent) => {
 //   console.log('mouse down', event.point);
 // };
+
+// resize canvas automatically
+window.addEventListener('resize', () => {
+  paperScope.view.viewSize = new paper.Size(window.innerWidth, window.innerHeight);
+  paperScope.view.center = new paper.Point(0, 0);
+});
