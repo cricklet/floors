@@ -36,7 +36,7 @@ export function faceColorForRegion(regionId: RegionId): string {
 }
 
 export function edgeColorForEdge(edgeId: EdgeId): string {
-  return EDGE_COLORS[edgeId % EDGE_COLORS.length];
+  return EDGE_COLORS[hashString(edgeId) % EDGE_COLORS.length];
 }
 
 export function clearRendering(scope: paper.PaperScope) {
@@ -56,9 +56,20 @@ export function renderEdges(scope: paper.PaperScope, scene: Scene) {
 
     {
       const vector = point2.subtract(point1);
-      const labelPoint = point1.add(vector.multiply(0.5));
+      const center = point1.add(vector.multiply(0.5));
+
+      const vectorPerpendicular = vector
+        .rotate(90, new paper.Point(0, 0))
+        .normalize();
+      const offset = vectorPerpendicular
+        .multiply(4)
+        .add(vector.normalize().multiply(10));
+
+      const labelPoint = center.add(offset);
+
       const text = new paper.PointText(labelPoint);
-      text.fontSize = 5;
+      text.rotate(vector.angle, labelPoint);
+      text.fontSize = 4;
       text.content = `${edge}`;
       text.justification = "center";
       scope.project.activeLayer.addChild(text);

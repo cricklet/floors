@@ -16,9 +16,16 @@ function createPaper(canvasId: string): paper.PaperScope {
   paperScope.view.zoom = 3;
   paperScope.settings.insertItems = false;
 
-  paperScope.view.viewSize = new paper.Size(divEl.clientWidth, divEl.clientHeight);
-  paperScope.view.center = new paper.Point(0, 0);
+  function updateSize() {
+    console.log(`updateSize ${divEl.clientWidth} ${divEl.clientHeight} ${canvasId} ${canvasEl.width} ${canvasEl.height}`);
+    paperScope.view.viewSize = new paper.Size(divEl.clientWidth, divEl.clientHeight);
+    paperScope.view.center = new paper.Point(0, 0);
+  }
 
+  window.addEventListener('resize', () => {
+    updateSize();
+  });
+  updateSize();
 
   return paperScope;
 }
@@ -50,6 +57,10 @@ scene.addEdge(i, g);
 scene.addEdge(g, a);
 scene.addEdge(b, h);
 scene.addEdge(d, f);
+
+// scene.addEdge(a, c);
+// scene.addEdge(b, h);
+// scene.addEdge(d, f);
 
 const flattened = flattenScene(scene);
 const regions = findRegions(flattened);
@@ -113,9 +124,3 @@ renderEdges(paper2, flattened);
 // paperScope.view.onMouseDown = (event: paper.MouseEvent) => {
 //   console.log('mouse down', event.point);
 // };
-
-// resize canvas automatically
-window.addEventListener('resize', () => {
-  paper.view.viewSize = new paper.Size(window.innerWidth, window.innerHeight);
-  paper.view.center = new paper.Point(0, 0);
-});

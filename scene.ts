@@ -1,10 +1,9 @@
 import paper from "paper";
 
 export type PointId = string;
-export type EdgeId = number;
+export type EdgeId = string;
 
 let _nextPointId = 0;
-let _nextEdgeId = 0;
 
 export class Scene {
   private _points: Map<PointId, paper.Point>;
@@ -47,9 +46,8 @@ export class Scene {
       return;
     }
 
-    const id = _nextEdgeId;
+    const id = [point1, point2].sort().join("");
     this._edges.set(id, [point1, point2]);
-    _nextEdgeId++;
   }
 
   removeEdge(edgeId: EdgeId) {
