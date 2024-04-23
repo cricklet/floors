@@ -3,10 +3,10 @@ import { EdgeId, PointId, Scene } from "./scene";
 
 function removeIntersectionOnce(scene: Scene, edgeId: EdgeId) {
   const [point1, point2] = scene.edges().get(edgeId)!;
-  const path = new paper.Path.Line({
-    segments: [scene.getPoint(point1), scene.getPoint(point2)],
-    insert: false,
-  });
+  const path = new paper.Path.Line(
+    scene.getPoint(point1),
+    scene.getPoint(point2)
+  );
 
   for (const [otherId, [otherPoint1, otherPoint2]] of scene.edges()) {
     if (edgeId === otherId) {
@@ -14,10 +14,10 @@ function removeIntersectionOnce(scene: Scene, edgeId: EdgeId) {
     }
 
     // TODO: so much garbage collection
-    const otherPath = new paper.Path.Line({
-      segments: [scene.getPoint(otherPoint1), scene.getPoint(otherPoint2)],
-      insert: false,
-    });
+    const otherPath = new paper.Path.Line(
+      scene.getPoint(otherPoint1),
+      scene.getPoint(otherPoint2)
+    );
 
     if (path.intersects(otherPath)) {
       const intersection = path.getIntersections(otherPath)[0].point;
@@ -28,7 +28,10 @@ function removeIntersectionOnce(scene: Scene, edgeId: EdgeId) {
         continue;
       }
 
-      const intersectionPoint = scene.addPoint(intersection, `${edgeId}x${otherId}`);
+      const intersectionPoint = scene.addPoint(
+        intersection,
+        `${edgeId}x${otherId}`
+      );
 
       scene.addEdge(point1, intersectionPoint);
       scene.addEdge(intersectionPoint, point2);

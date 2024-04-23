@@ -36,7 +36,7 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
   for (const cycle of cycles) {
     const regionId = regionIdForCycle(cycle);
 
-    const path = new paper.Path({ insert: false });
+    const path = new paper.Path();
     for (const pointId of cycle) {
       path.add(scene.getPoint(pointId));
     }

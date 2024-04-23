@@ -5,12 +5,26 @@ import { flattenScene } from "./flatten";
 import { findRegions } from "./regions";
 import { clearRendering, renderEdges, renderRegions } from "./render";
 
-const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
+function createPaper(canvasId: string): paper.PaperScope {
+  const canvasEl = document.getElementById(canvasId) as HTMLCanvasElement;
+  const divEl = canvasEl.parentElement as HTMLDivElement;
 
-paper.setup(canvasEl);
-paper.settings.handleSize = 8;
-paper.view.zoom = 3;
-paper.view.center = new paper.Point(0, 0);
+  const paperScope = new paper.PaperScope();
+  paperScope.setup(canvasEl);
+
+  paperScope.settings.handleSize = 8;
+  paperScope.view.zoom = 3;
+  paperScope.settings.insertItems = false;
+
+  paperScope.view.viewSize = new paper.Size(divEl.clientWidth, divEl.clientHeight);
+  paperScope.view.center = new paper.Point(0, 0);
+
+
+  return paperScope;
+}
+
+const paper1 = createPaper("canvas1");
+const paper2 = createPaper("canvas2");
 
 const scene = new Scene();
 
@@ -20,15 +34,15 @@ const scene = new Scene();
  g h i
 */
 
-const a = scene.addPoint(new paper.Point(-50, -50));
-const b = scene.addPoint(new paper.Point(0, -50));
-const c = scene.addPoint(new paper.Point(50, -50));
-const d = scene.addPoint(new paper.Point(-50, 0));
+const a = scene.addPoint(new paper.Point(-50, -50), 'a');
+const b = scene.addPoint(new paper.Point(0, -50), 'b');
+const c = scene.addPoint(new paper.Point(50, -50), 'c');
+const d = scene.addPoint(new paper.Point(-50, 0), 'd');
 // const e = scene.addPoint(new paper.Point(0, 0));
-const f = scene.addPoint(new paper.Point(50, 0));
-const g = scene.addPoint(new paper.Point(-50, 50));
-const h = scene.addPoint(new paper.Point(0, 50));
-const i = scene.addPoint(new paper.Point(50, 50));
+const f = scene.addPoint(new paper.Point(50, 0), 'f');
+const g = scene.addPoint(new paper.Point(-50, 50), 'g');
+const h = scene.addPoint(new paper.Point(0, 50), 'h');
+const i = scene.addPoint(new paper.Point(50, 50), 'i');
 
 scene.addEdge(a, c);
 scene.addEdge(c, i);
@@ -40,12 +54,19 @@ scene.addEdge(d, f);
 const flattened = flattenScene(scene);
 const regions = findRegions(flattened);
 
-setInterval(() => {
-  clearRendering();
-  // renderEdges(scene);
-  renderRegions(regions, flattened);
-  renderEdges(flattened);
-}, 1000 / 60);
+clearRendering(paper1);
+renderEdges(paper1, scene);
+
+clearRendering(paper2);
+renderRegions(paper2, regions, flattened);
+renderEdges(paper2, flattened);
+
+// setInterval(() => {
+//   clearRendering();
+//   // renderEdges(scene);
+//   renderRegions(regions, flattened);
+//   renderEdges(flattened);
+// }, 1000 / 60);
 
 // class HoverPointHint {
 //   hint: paper.Item | undefined;
