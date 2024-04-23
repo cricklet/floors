@@ -1,6 +1,7 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 import { RegionId } from "./regions";
+import { PointRenderState } from "./interactions";
 
 const EDGE_COLORS = [
   "#005f73",
@@ -55,25 +56,39 @@ function orderPoints(
   }
 }
 
-const POINT = ["#ccc", "#555"];
-const HOVER = ["#f0f0f0", "#08a"];
-const SELECTED = ["#f0f0f0", "#0be"];
-const SELECTED_HOVERED = ["#ffffff", "#0cf"];
-// const SELECTED = ["#0be", "#555"];
-// const SELECTED_HOVERED = ["#0cf", "#777"];
+type PointStyle = [string, string, number];
+const DEFAULT: PointStyle = ["#ccc", "#555", 2];
+const HOVER: PointStyle = ["#f0f0f0", "#08a", 2];
+const SELECTED: PointStyle = ["#f0f0f0", "#0be", 3];
+const SELECTED_HOVERED: PointStyle = ["#ffffff", "#0cf", 3];
 
-export function renderPoints(
+export function renderHandles(
   scope: paper.PaperScope,
-  scene: Scene,
-  options: {
-    hoveredPoint?: paper.Point;
-    selectedPointId?: PointId;
-  }
+  points: Array<[paper.Point, PointRenderState]>
 ) {
-  for (const [pointId, point] of scene.points()) {
-    const [fill, stroke] = POINT;
+  for (const [point, state] of points) {
+    const [fill, stroke, size] =
+      state === "hovered"
+        ? HOVER
+        : state === "selected"
+        ? SELECTED
+        : state === "selected-hovered"
+        ? SELECTED_HOVERED
+        : DEFAULT;
 
-    const circle = new paper.Path.Circle(point, 2);
+    const circle = new paper.Path.Circle(point, size);
+    circle.fillColor = new paper.Color(fill);
+    circle.strokeColor = new paper.Color(stroke);
+    circle.strokeWidth = 1;
+    scope.project.activeLayer.addChild(circle);
+  }
+}
+
+export function renderPoints(scope: paper.PaperScope, scene: Scene) {
+  for (const [pointId, point] of scene.points()) {
+    const [fill, stroke, size] = DEFAULT;
+
+    const circle = new paper.Path.Circle(point, size);
     circle.fillColor = new paper.Color(fill);
     circle.strokeColor = new paper.Color(stroke);
     circle.strokeWidth = 1;
@@ -83,27 +98,6 @@ export function renderPoints(
     text.fontSize = 6;
     text.content = `${pointId}`;
     scope.project.activeLayer.addChild(text);
-  }
-
-  if (options.hoveredPoint) {
-    const [fill, stroke] = HOVER;
-
-    const circle = new paper.Path.Circle(options.hoveredPoint, 2);
-    circle.fillColor = new paper.Color(fill);
-    circle.strokeColor = new paper.Color(stroke);
-    circle.strokeWidth = 1;
-    scope.project.activeLayer.addChild(circle);
-  }
-
-  if (options.selectedPointId) {
-    const point = scene.getPoint(options.selectedPointId);
-    const [fill, stroke] = options.hoveredPoint === point ? SELECTED_HOVERED : SELECTED;
-
-    const circle = new paper.Path.Circle(point, 3);
-    circle.fillColor = new paper.Color(fill);
-    circle.strokeColor = new paper.Color(stroke);
-    circle.strokeWidth = 1;
-    scope.project.activeLayer.addChild(circle);
   }
 }
 

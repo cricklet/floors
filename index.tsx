@@ -3,7 +3,8 @@ import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 import { flattenScene } from "./flatten";
 import { findRegions } from "./regions";
-import { clearRendering, renderEdges, renderPoints, renderRegions } from "./render";
+import { clearRendering, renderEdges, renderHandles, renderPoints, renderRegions } from "./render";
+import { EditBehavior } from "./interactions";
 
 function createPaper(canvasId: string): paper.PaperScope {
   const canvasEl = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -70,9 +71,6 @@ function updateScenes(): [Scene, Map<string, Array<string>>] {
 
 let [flattened, regions] = updateScenes();
 
-let hoveredPoint: paper.Point | undefined = undefined;
-let selectedPoint: PointId | undefined = undefined;
-
 let currentGeneration = scene.generation();
 
 setInterval(() => {
@@ -83,60 +81,14 @@ setInterval(() => {
 
   clearRendering(paper1);
   renderEdges(paper1, scene);
-  renderPoints(paper1, scene, { hoveredPoint, selectedPointId: selectedPoint });
+  renderPoints(paper1, scene);
+  renderHandles(paper1, editBehavior.renderHints());
 
   clearRendering(paper2);
   renderRegions(paper2, regions, flattened);
   renderEdges(paper2, flattened);
-  renderPoints(paper2, flattened, {});
+  renderPoints(paper2, flattened);
 
 }, 1000 / 60);
 
-function findPoint(point: paper.Point): { pointId: PointId | undefined, point: paper.Point | undefined } {
-  for (const [pointId, scenePoint] of scene.points()) {
-    if (scenePoint.getDistance(point) < 6) {
-      return {
-        pointId,
-        point: scenePoint,
-      };
-    }
-  }
-
-  return {
-    pointId: undefined,
-    point: undefined,
-  };
-}
-
-paper1.view.onMouseMove = (event: paper.MouseEvent) => {
-  hoveredPoint = undefined;
-
-  const { point } = findPoint(event.point);
-  if (point) {
-    hoveredPoint = point;
-  }
-};
-
-let startDrag: paper.Point | undefined = undefined;
-let startPoint: paper.Point | undefined = undefined;
-
-paper1.view.onMouseDown = (event: paper.MouseEvent) => {
-  selectedPoint = undefined;
-  hoveredPoint = undefined;
-
-  const { pointId, point } = findPoint(event.point);
-  if (pointId) {
-    selectedPoint = pointId;
-  }
-
-  startDrag = event.point;
-  startPoint = point;
-};
-
-paper1.view.onMouseDrag = (event: paper.MouseEvent) => {
-  if (selectedPoint) {
-    const offset = event.point.subtract(startDrag!);
-    const newPoint = startPoint!.add(offset);
-    scene.setPoint(selectedPoint, newPoint);
-  }
-};
+const editBehavior = new EditBehavior(paper1, scene);
