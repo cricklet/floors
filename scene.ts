@@ -1,4 +1,4 @@
-import * as paper from "paper";
+import paper from "paper";
 
 export type PointId = number;
 export type EdgeId = number;

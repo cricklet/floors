@@ -1,4 +1,4 @@
-import * as paper from "paper";
+import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 
 class LinesCache {

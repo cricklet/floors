@@ -1,9 +1,9 @@
-import * as paper from "paper";
+import paper from "paper";
 import { findAllCycles } from "./cycles";
 import { EdgeId, PointId, Scene } from "./scene";
-import { colorForId } from "./render";
+import { FACE_COLORS } from "./render";
 
-type RegionId = number;
+export type RegionId = number;
 
 const _regionNameToId = new Map<string, RegionId>();
 
@@ -36,7 +36,7 @@ function findCyclesInEdges(
   return findAllCycles(graph);
 }
 
-export function findRegions(scene: Scene) {
+export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
   // find all cycles
   const cycles = findCyclesInEdges(scene.edges());
   const regions = new Map<RegionId, [Array<PointId>, paper.Path]>();
@@ -49,13 +49,15 @@ export function findRegions(scene: Scene) {
       path.add(scene.getPoint(pointId));
     }
     path.closed = true;
-    path.fillColor = new paper.Color(colorForId(regionId));
+    path.fillColor = new paper.Color(
+      FACE_COLORS[regionId % FACE_COLORS.length]
+    );
 
     regions.set(regionId, [cycle, path]);
   }
 
   // find cycles that do not contain any other cycles
-  const minimalCycles = new Map<RegionId, [Array<PointId>, paper.Path]>();
+  const minimalCycles = new Map<RegionId, Array<PointId>>();
   for (const [regionId, [cycle, path]] of regions) {
     let containsOtherCycle = false;
 
@@ -79,11 +81,9 @@ export function findRegions(scene: Scene) {
     }
 
     if (!containsOtherCycle) {
-      console.log("minimal cycle", cycle);
-      minimalCycles.set(regionId, [cycle, path]);
-      paper.project.activeLayer.addChild(path);
+      minimalCycles.set(regionId, cycle);
     }
   }
 
-  // add all cycles that do not intersect another cycle
+  return minimalCycles;
 }

@@ -1,31 +1,24 @@
-/*
-verticies: Map<VertexId, Point>
-edges: Array<[VertexId, VertexId]>
 
-how to compute faces?
-*/
-
-import * as paper from "paper";
+import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 import { flattenScene } from "./flatten";
 import { findRegions } from "./regions";
-import { renderEdges } from "./render";
+import { clearRendering, renderEdges, renderRegions } from "./render";
 
 const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
 
-const paperScope = new paper.PaperScope();
-paperScope.setup(canvasEl);
-paperScope.settings.handleSize = 8;
-paperScope.view.zoom = 3;
-paperScope.view.center = new paper.Point(0, 0);
+paper.setup(canvasEl);
+paper.settings.handleSize = 8;
+paper.view.zoom = 3;
+paper.view.center = new paper.Point(0, 0);
+
+const scene = new Scene();
 
 /*
  a b c
  d e f
  g h i
 */
-
-const scene = new Scene();
 
 const a = scene.addPoint(new paper.Point(-50, -50));
 const b = scene.addPoint(new paper.Point(0, -50));
@@ -47,8 +40,9 @@ scene.addEdge(d, f);
 const flattened = flattenScene(scene);
 const regions = findRegions(flattened);
 
+clearRendering();
+renderRegions(regions, flattened);
 renderEdges(flattened);
-// renderEdges(scene);
 
 // new paper.Path.Circle({
 //   center: new paper.Point(100, 100),
@@ -104,6 +98,6 @@ renderEdges(flattened);
 
 // resize canvas automatically
 window.addEventListener('resize', () => {
-  paperScope.view.viewSize = new paper.Size(window.innerWidth, window.innerHeight);
-  paperScope.view.center = new paper.Point(0, 0);
+  paper.view.viewSize = new paper.Size(window.innerWidth, window.innerHeight);
+  paper.view.center = new paper.Point(0, 0);
 });

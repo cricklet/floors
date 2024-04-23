@@ -1,27 +1,29 @@
-import * as paper from "paper";
-import { Scene } from "./scene";
+import paper from "paper";
+import { PointId, Scene } from "./scene";
+import { RegionId } from "./regions";
 
-export const COLORS = [
+export const EDGE_COLORS = [
   "#005f73",
   "#bb3e03",
   "#0a9396",
-  "#ee9b00",
-  "#ca6702",
+  "#aa5702",
   "#9b2226",
   "#ae2012",
   "#287271",
-  "#2a9d8f",
-  "#8ab17d",
-  "#babb74",
-  "#e9c46a",
-  "#efb366",
-  "#f4a261",
-  "#ee8959",
-  "#e76f51",
+];
+export const FACE_COLORS = [
+  "#2a9d8f55",
+  "#8ab17d55",
+  "#babb7455",
+  "#e9c46a55",
+  "#efb36655",
+  "#f4a26155",
+  "#ee895955",
+  "#e76f5155",
 ];
 
-export function colorForId(id: number): string {
-  return COLORS[id % COLORS.length];
+export function clearRendering() {
+  paper.project.clear();
 }
 
 export function renderEdges(scene: Scene) {
@@ -30,7 +32,7 @@ export function renderEdges(scene: Scene) {
       scene.getPoint(point1),
       scene.getPoint(point2)
     );
-    line.strokeColor = new paper.Color(colorForId(edge));
+    line.strokeColor = new paper.Color(EDGE_COLORS[edge % EDGE_COLORS.length]);
     line.strokeWidth = 2;
     line.strokeCap = "round";
 
@@ -41,5 +43,21 @@ export function renderEdges(scene: Scene) {
 
     const text2 = new paper.PointText(scene.getPoint(point2).add(offset));
     text2.content = `${point2}`;
+  }
+}
+
+export function renderRegions(
+  regions: Map<RegionId, Array<PointId>>,
+  scene: Scene
+) {
+  for (const [regionId, cycle] of regions) {
+    const regionPath = new paper.Path();
+    for (const pointId of cycle) {
+      regionPath.add(scene.getPoint(pointId));
+    }
+    regionPath.closed = true;
+    regionPath.fillColor = new paper.Color(
+      FACE_COLORS[regionId % FACE_COLORS.length]
+    );
   }
 }
