@@ -1,7 +1,7 @@
 import * as paper from "paper";
 import { Scene } from "./scene";
 
-const COLORS = [
+export const COLORS = [
   "#005f73",
   "#bb3e03",
   "#0a9396",
@@ -20,7 +20,7 @@ const COLORS = [
   "#e76f51",
 ];
 
-function colorForId(id: number): string {
+export function colorForId(id: number): string {
   return COLORS[id % COLORS.length];
 }
 

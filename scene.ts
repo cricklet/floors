@@ -10,12 +10,9 @@ export class Scene {
   private _points: Map<PointId, paper.Point>;
   private _edges: Map<EdgeId, [PointId, PointId]>;
 
-  private _listeners: Array<(scene: Scene) => void> = [];
-
   constructor() {
     this._points = new Map();
     this._edges = new Map();
-    this._listeners = [];
   }
 
   cloneFrom(scene: Readonly<Scene>) {
@@ -56,9 +53,5 @@ export class Scene {
 
   edges(): ReadonlyMap<EdgeId, [PointId, PointId]> {
     return this._edges;
-  }
-
-  addListener(listener: (scene: Scene) => void) {
-    this._listeners.push(listener);
   }
 }

@@ -30,7 +30,11 @@ class LinesCache {
       }
     }
 
-    const path = new paper.Path.Line(point1, point2);
+    const path = new paper.Path.Line({
+      segments: [point1, point2],
+      insert: false,
+    });
+
     this._paths.set(edgeId, [point1, point2, path]);
     return path;
   }
@@ -38,42 +42,41 @@ class LinesCache {
 
 const linesCache = new LinesCache();
 
-function flattenOnce(flattened: Scene) {
-  for (const [edgeId, [point1, point2]] of flattened.edges()) {
-    const path = linesCache.lineInScene(flattened, edgeId, point1, point2);
+function removeIntersectionOnce(scene: Scene, edgeId: EdgeId) {
+  const [point1, point2] = scene.edges().get(edgeId)!;
+  const path = linesCache.lineInScene(scene, edgeId, point1, point2);
 
-    for (const [otherId, [otherPoint1, otherPoint2]] of flattened.edges()) {
-      if (edgeId === otherId) {
+  for (const [otherId, [otherPoint1, otherPoint2]] of scene.edges()) {
+    if (edgeId === otherId) {
+      continue;
+    }
+
+    const otherPath = linesCache.lineInScene(
+      scene,
+      otherId,
+      otherPoint1,
+      otherPoint2
+    );
+    if (path.intersects(otherPath)) {
+      const intersection = path.getIntersections(otherPath)[0].point;
+      if (
+        intersection.equals(scene.getPoint(point1)) ||
+        intersection.equals(scene.getPoint(point2))
+      ) {
         continue;
       }
 
-      const otherPath = linesCache.lineInScene(
-        flattened,
-        otherId,
-        otherPoint1,
-        otherPoint2
-      );
-      if (path.intersects(otherPath)) {
-        const intersection = path.getIntersections(otherPath)[0].point;
-        if (
-          intersection.equals(flattened.getPoint(point1)) ||
-          intersection.equals(flattened.getPoint(point2))
-        ) {
-          continue;
-        }
+      const intersectionPoint = scene.addPoint(intersection);
 
-        const intersectionPoint = flattened.addPoint(intersection);
+      scene.addEdge(point1, intersectionPoint);
+      scene.addEdge(intersectionPoint, point2);
+      scene.addEdge(otherPoint1, intersectionPoint);
+      scene.addEdge(intersectionPoint, otherPoint2);
 
-        flattened.addEdge(point1, intersectionPoint);
-        flattened.addEdge(intersectionPoint, point2);
-        flattened.addEdge(otherPoint1, intersectionPoint);
-        flattened.addEdge(intersectionPoint, otherPoint2);
+      scene.removeEdge(edgeId);
+      scene.removeEdge(otherId);
 
-        flattened.removeEdge(edgeId);
-        flattened.removeEdge(otherId);
-
-        return true;
-      }
+      return true;
     }
   }
 
@@ -86,8 +89,17 @@ export function flattenScene(source: Readonly<Scene>): Scene {
 
   for (let i = 0; i < 1000; i++) {
     console.log("flattening...");
-    const updated = flattenOnce(flattened);
-    if (!updated) {
+    let foundIntersection = false;
+
+    for (const edgeId of flattened.edges().keys()) {
+      const updated = removeIntersectionOnce(flattened, edgeId);
+      if (updated) {
+        foundIntersection = true;
+        break;
+      }
+    }
+
+    if (!foundIntersection) {
       break;
     }
   }

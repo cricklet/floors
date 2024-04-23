@@ -12,12 +12,12 @@ import { findRegions } from "./regions";
 import { renderEdges } from "./render";
 
 const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
+
 const paperScope = new paper.PaperScope();
 paperScope.setup(canvasEl);
 paperScope.settings.handleSize = 8;
 paperScope.view.zoom = 3;
 paperScope.view.center = new paper.Point(0, 0);
-
 
 /*
  a b c
