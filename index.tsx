@@ -15,7 +15,7 @@ const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
 const paperScope = new paper.PaperScope();
 paperScope.setup(canvasEl);
 paperScope.settings.handleSize = 8;
-paperScope.view.zoom = 2;
+paperScope.view.zoom = 3;
 paperScope.view.center = new paper.Point(0, 0);
 
 
@@ -27,15 +27,15 @@ paperScope.view.center = new paper.Point(0, 0);
 
 const scene = new Scene();
 
-const a = scene.addPoint(new paper.Point(-100, -100));
-const b = scene.addPoint(new paper.Point(0, -100));
-const c = scene.addPoint(new paper.Point(100, -100));
-const d = scene.addPoint(new paper.Point(-100, 0));
+const a = scene.addPoint(new paper.Point(-50, -50));
+const b = scene.addPoint(new paper.Point(0, -50));
+const c = scene.addPoint(new paper.Point(50, -50));
+const d = scene.addPoint(new paper.Point(-50, 0));
 // const e = scene.addPoint(new paper.Point(0, 0));
-const f = scene.addPoint(new paper.Point(100, 0));
-const g = scene.addPoint(new paper.Point(-100, 100));
-const h = scene.addPoint(new paper.Point(0, 100));
-const i = scene.addPoint(new paper.Point(100, 100));
+const f = scene.addPoint(new paper.Point(50, 0));
+const g = scene.addPoint(new paper.Point(-50, 50));
+const h = scene.addPoint(new paper.Point(0, 50));
+const i = scene.addPoint(new paper.Point(50, 50));
 
 scene.addEdge(a, c);
 scene.addEdge(c, i);
@@ -45,7 +45,7 @@ scene.addEdge(b, h);
 scene.addEdge(d, f);
 
 const flattened = flattenScene(scene);
-const regions = findRegions(scene);
+const regions = findRegions(flattened);
 
 renderEdges(flattened);
 

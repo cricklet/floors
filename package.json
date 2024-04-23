@@ -9,6 +9,7 @@
     "@types/react-dom": "^18.2.23",
     "esbuild": "^0.20.2",
     "jotai": "^2.7.2",
+    "min-cycles": "^0.2.0",
     "paper": "^0.12.17",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

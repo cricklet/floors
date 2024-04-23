@@ -1,28 +1,48 @@
-import { findAllCycles } from "./cycles";
+// @ts-ignore
+import { extract_cycles } from "min-cycles";
+
 import { EdgeId, PointId, Scene } from "./scene";
 
-function findCyclesInEdges(edges: ReadonlyMap<EdgeId, [PointId, PointId]>) {
-  const graph = new Map<PointId, PointId[]>();
-  for (const [edgeId, [point1, point2]] of edges) {
-    if (!graph.has(point1)) {
-      graph.set(point1, []);
-    }
-    if (!graph.has(point2)) {
-      graph.set(point2, []);
-    }
-    graph.get(point1)!.push(point2);
-    graph.get(point2)!.push(point1);
-  }
-
-  console.log(JSON.stringify(Object.fromEntries(graph), null, 2));
-
-  return findAllCycles(graph);
+interface Vertex {
+  x: number;
+  y: number;
+  adj: Array<Vertex>;
 }
 
 export function findRegions(scene: Scene) {
   // find all cycles
-  const cycles = findCyclesInEdges(scene.edges());
-  console.log(cycles);
+  const vertices: Array<Vertex> = [];
+  const indices: Map<PointId, number> = new Map();
 
-  // add all cycles that do not intersect another cycle
+  function addVertex(vertex: PointId) {
+    if (indices.has(vertex)) {
+      return;
+    }
+
+    const index = vertices.length;
+    vertices.push({
+      x: scene.getPoint(vertex).x,
+      y: scene.getPoint(vertex).y,
+      adj: [],
+    });
+    indices.set(vertex, index);
+  }
+
+  for (const [_, [pointId1, pointId2]] of scene.edges()) {
+    addVertex(pointId1);
+    addVertex(pointId2);
+  }
+
+  for (const [_, [pointId1, pointId2]] of scene.edges()) {
+    const index1 = indices.get(pointId1)!;
+    const index2 = indices.get(pointId2)!;
+
+    vertices[index1].adj.push(vertices[index2]);
+    vertices[index2].adj.push(vertices[index1]);
+  }
+
+  console.log(vertices);
+  console.log(extract_cycles(vertices));
+
+  // // add all cycles that do not intersect another cycle
 }
