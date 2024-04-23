@@ -17,7 +17,6 @@ function createPaper(canvasId: string): paper.PaperScope {
   paperScope.settings.insertItems = false;
 
   function updateSize() {
-    console.log(`updateSize ${divEl.clientWidth} ${divEl.clientHeight} ${canvasId} ${canvasEl.width} ${canvasEl.height}`);
     paperScope.view.viewSize = new paper.Size(divEl.clientWidth, divEl.clientHeight);
     paperScope.view.center = new paper.Point(0, 0);
   }
