@@ -3,7 +3,7 @@ import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 import { flattenScene } from "./flatten";
 import { findRegions } from "./regions";
-import { clearRendering, renderEdges, renderRegions } from "./render";
+import { clearRendering, renderEdges, renderPoints, renderRegions } from "./render";
 
 function createPaper(canvasId: string): paper.PaperScope {
   const canvasEl = document.getElementById(canvasId) as HTMLCanvasElement;
@@ -64,62 +64,50 @@ scene.addEdge(d, f);
 const flattened = flattenScene(scene);
 const regions = findRegions(flattened);
 
-clearRendering(paper1);
-renderEdges(paper1, scene);
+let hoveredPoint: paper.Point | undefined = undefined;
+let selectedPoint: PointId | undefined = undefined;
 
-clearRendering(paper2);
-renderRegions(paper2, regions, flattened);
-renderEdges(paper2, flattened);
+setInterval(() => {
+  clearRendering(paper1);
+  renderEdges(paper1, scene);
+  renderPoints(paper1, scene, { hoveredPoint, selectedPointId: selectedPoint });
 
-// setInterval(() => {
-//   clearRendering();
-//   // renderEdges(scene);
-//   renderRegions(regions, flattened);
-//   renderEdges(flattened);
-// }, 1000 / 60);
+  clearRendering(paper2);
+  renderRegions(paper2, regions, flattened);
+  renderEdges(paper2, flattened);
+}, 1000 / 60);
 
-// class HoverPointHint {
-//   hint: paper.Item | undefined;
-//   constructor() {
-//     this.hint = undefined;
-//   }
-//   update(point: paper.Point | undefined) {
-//     if (this.hint) {
-//       this.hint.remove();
-//       this.hint = undefined;
-//     }
+function findPoint(point: paper.Point): { pointId: PointId | undefined, point: paper.Point | undefined } {
+  for (const [pointId, scenePoint] of scene.points()) {
+    if (scenePoint.getDistance(point) < 6) {
+      return {
+        pointId,
+        point: scenePoint,
+      };
+    }
+  }
 
-//     // if (this.hint) {
-//     //   this.hint.position = point;
-//     //   return
-//     // }
+  return {
+    pointId: undefined,
+    point: undefined,
+  };
+}
 
-//     this.hint = new paper.Path.Circle({
-//       center: point,
-//       radius: 10,
-//       fillColor: 'blue',
-//     });
-//   }
-// }
+paper1.view.onMouseMove = (event: paper.MouseEvent) => {
+  hoveredPoint = undefined;
 
-// const hoverPointHint = new HoverPointHint();
+  const { point } = findPoint(event.point);
+  if (point) {
+    hoveredPoint = point;
+  }
+};
 
-// paperScope.view.onMouseMove = (event: paper.MouseEvent) => {
-//   // clear selection
-//   // look for segments of paths that are near the mouse point
-//   paperScope.project.activeLayer.children.forEach((item: paper.Item) => {
-//     if (item instanceof paper.Path && item.segments.length > 0) {
-//       item.segments.forEach((segment: paper.Segment) => {
-//         if (segment.point.getDistance(event.point) < 10) {
-//           console.log(segment.point);
-//           hoverPointHint.update(segment.point);
-//         }
-//       });
-//     }
-//   });
+paper1.view.onMouseDown = (event: paper.MouseEvent) => {
+  selectedPoint = undefined;
 
-// };
-
-// paperScope.view.onMouseDown = (event: paper.MouseEvent) => {
-//   console.log('mouse down', event.point);
-// };
+  const { pointId } = findPoint(event.point);
+  if (pointId) {
+    console.log(`selected point: ${pointId}`);
+    selectedPoint = pointId;
+  }
+};
