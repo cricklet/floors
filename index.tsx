@@ -86,7 +86,7 @@ setInterval(() => {
   renderPoints(paper1, scene, { hoveredPoint, selectedPointId: selectedPoint });
 
   clearRendering(paper2);
-  // renderRegions(paper2, regions, flattened);
+  renderRegions(paper2, regions, flattened);
   renderEdges(paper2, flattened);
   renderPoints(paper2, flattened, {});
 
