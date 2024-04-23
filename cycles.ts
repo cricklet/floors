@@ -1,10 +1,10 @@
-export function findAllCycles(
-  graph: Map<number, Array<number>>
-): Array<Array<number>> {
+export function findAllCycles<T>(
+  graph: Map<T, Array<T>>
+): Array<Array<T>> {
   const seenCycles: Set<string> = new Set();
-  const cycles: Array<Array<number>> = [];
+  const cycles: Array<Array<T>> = [];
 
-  function seen(path: Array<number>): boolean {
+  function seen(path: Array<T>): boolean {
     path = path.toSorted();
 
     const key = path.join(",");
@@ -16,7 +16,7 @@ export function findAllCycles(
     return false;
   }
 
-  function dfs(node: number, visited: Set<number>, path: Array<number>) {
+  function dfs(node: T, visited: Set<T>, path: Array<T>) {
     visited.add(node);
     path.push(node);
 
@@ -40,7 +40,7 @@ export function findAllCycles(
   }
 
   for (const node of graph.keys()) {
-    dfs(node, new Set<number>(), []);
+    dfs(node, new Set<T>(), []);
   }
 
   return cycles;

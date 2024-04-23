@@ -1,6 +1,6 @@
 import paper from "paper";
 
-export type PointId = number;
+export type PointId = string;
 export type EdgeId = number;
 
 let _nextPointId = 0;
@@ -20,14 +20,19 @@ export class Scene {
     this._edges = new Map(scene.edges());
   }
 
-  addPoint(point: paper.Point): number {
+  addPoint(point: paper.Point, stableId?: PointId): PointId {
     for (const [id, existingPoint] of this._points) {
       if (existingPoint.equals(point)) {
-        return id;
+        return `${id}`;
       }
     }
 
-    const id = _nextPointId;
+    if (stableId) {
+      this._points.set(stableId, point);
+      return stableId;
+    }
+
+    const id = `${_nextPointId}`;
     this._points.set(id, point);
     _nextPointId++;
     return id;
@@ -37,7 +42,7 @@ export class Scene {
     return this._points.get(pointId)!;
   }
 
-  addEdge(point1: number, point2: number) {
+  addEdge(point1: PointId, point2: PointId) {
     const id = _nextEdgeId;
     this._edges.set(id, [point1, point2]);
     _nextEdgeId++;
