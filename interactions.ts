@@ -1,5 +1,6 @@
 import paper from "paper";
-import { PointId, Scene } from "./scene";
+import { EdgeId, PointId, Scene } from "./scene";
+import { findIntersections } from "./flatten";
 
 interface Dragging {
   kind: "dragging";
@@ -16,6 +17,12 @@ interface Idle {
 
 type State = Dragging | Idle;
 
+interface PotentialPoint {
+  pointId: PointId | undefined;
+  point: paper.Point;
+  edgesToSplit: Set<EdgeId>;
+}
+
 export type PointRenderState = "hovered" | "selected" | "selected-hovered";
 
 function findPoint(
@@ -26,10 +33,21 @@ function findPoint(
   point: paper.Point | undefined;
 } {
   for (const [pointId, scenePoint] of scene.points()) {
-    if (scenePoint.getDistance(point) < 6) {
+    if (scenePoint.getDistance(point) < 5) {
       return {
         pointId,
         point: scenePoint,
+      };
+    }
+  }
+
+  const intersections: Map<paper.Point, Set<EdgeId>> = findIntersections(scene);
+
+  for (const [intersection, _] of intersections) {
+    if (intersection.getDistance(point) < 5) {
+      return {
+        pointId: undefined,
+        point: intersection,
       };
     }
   }

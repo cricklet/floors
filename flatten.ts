@@ -1,7 +1,11 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 
-function removeIntersectionOnce(scene: Scene, edgeId: EdgeId, otherId: EdgeId) {
+function findIntersection(
+  scene: Readonly<Scene>,
+  edgeId: EdgeId,
+  otherId: EdgeId
+): paper.Point | undefined {
   const [point1, point2] = scene.edges().get(edgeId)!;
   const path = new paper.Path.Line(
     scene.getPoint(point1),
@@ -11,7 +15,7 @@ function removeIntersectionOnce(scene: Scene, edgeId: EdgeId, otherId: EdgeId) {
   const [otherPoint1, otherPoint2] = scene.edges().get(otherId)!;
 
   if (edgeId === otherId) {
-    return false;
+    return undefined;
   }
 
   // TODO: so much garbage collection
@@ -20,32 +24,44 @@ function removeIntersectionOnce(scene: Scene, edgeId: EdgeId, otherId: EdgeId) {
     scene.getPoint(otherPoint2)
   );
 
-  if (path.intersects(otherPath)) {
-    const intersection = path.getIntersections(otherPath)[0].point;
-    if (
-      intersection.equals(scene.getPoint(point1)) ||
-      intersection.equals(scene.getPoint(point2))
-    ) {
-      return false;
-    }
-
-    const intersectionPoint = scene.addPoint(
-      intersection,
-      `(${edgeId}${otherId})`
-    );
-
-    scene.removeEdge(edgeId);
-    scene.removeEdge(otherId);
-
-    scene.addEdge(point1, intersectionPoint);
-    scene.addEdge(intersectionPoint, point2);
-    scene.addEdge(otherPoint1, intersectionPoint);
-    scene.addEdge(intersectionPoint, otherPoint2);
-
-    return true;
+  if (!path.intersects(otherPath)) {
+    return undefined;
   }
 
-  return false;
+  const intersection = path.getIntersections(otherPath)[0].point;
+  if (
+    intersection.equals(scene.getPoint(point1)) ||
+    intersection.equals(scene.getPoint(point2))
+  ) {
+    return undefined;
+  }
+
+  return intersection;
+}
+
+function removeIntersectionOnce(scene: Scene, edgeId: EdgeId, otherId: EdgeId) {
+  const [point1, point2] = scene.edges().get(edgeId)!;
+  const [otherPoint1, otherPoint2] = scene.edges().get(otherId)!;
+
+  const intersection = findIntersection(scene, edgeId, otherId);
+  if (!intersection) {
+    return false;
+  }
+
+  const intersectionPoint = scene.addPoint(
+    intersection,
+    `(${edgeId}${otherId})`
+  );
+
+  scene.removeEdge(edgeId);
+  scene.removeEdge(otherId);
+
+  scene.addEdge(point1, intersectionPoint);
+  scene.addEdge(intersectionPoint, point2);
+  scene.addEdge(otherPoint1, intersectionPoint);
+  scene.addEdge(intersectionPoint, otherPoint2);
+
+  return true;
 }
 
 export function flattenScene(source: Readonly<Scene>): Scene {
@@ -83,8 +99,8 @@ export function flattenScene(source: Readonly<Scene>): Scene {
 
 export function findIntersections(
   scene: Readonly<Scene>
-): Map<paper.Point, Array<EdgeId>> {
-  const result = new Map<paper.Point, Array<EdgeId>>();
+): Map<paper.Point, Set<EdgeId>> {
+  const result = new Map<paper.Point, Set<EdgeId>>();
 
   const edgeIds = Array.from(scene.edges().keys()).toSorted();
   for (const edgeId of edgeIds) {
@@ -93,33 +109,13 @@ export function findIntersections(
         continue;
       }
 
-      const [point1, point2] = scene.edges().get(edgeId)!;
-      const path = new paper.Path.Line(
-        scene.getPoint(point1),
-        scene.getPoint(point2)
-      );
-
-      const [otherPoint1, otherPoint2] = scene.edges().get(otherId)!;
-      const otherPath = new paper.Path.Line(
-        scene.getPoint(otherPoint1),
-        scene.getPoint(otherPoint2)
-      );
-
-      if (path.intersects(otherPath)) {
-        const intersection = path.getIntersections(otherPath)[0].point;
-        if (
-          intersection.equals(scene.getPoint(point1)) ||
-          intersection.equals(scene.getPoint(point2))
-        ) {
-          continue;
-        }
-
+      const intersection = findIntersection(scene, edgeId, otherId);
+      if (intersection) {
         if (!result.has(intersection)) {
-          result.set(intersection, []);
+          result.set(intersection, new Set());
         }
-
-        result.get(intersection)!.push(edgeId);
-        result.get(intersection)!.push(otherId);
+        result.get(intersection)!.add(edgeId);
+        result.get(intersection)!.add(otherId);
       }
     }
   }
