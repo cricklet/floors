@@ -1,5 +1,5 @@
 import paper from "paper";
-import { PointId, Scene } from "./scene";
+import { EdgeId, PointId, Scene } from "./scene";
 import { RegionId } from "./regions";
 
 const EDGE_COLORS = [
@@ -22,8 +22,8 @@ const FACE_COLORS = [
   "#e76f5155",
 ];
 
-function hashRegionId(regionId: RegionId): number {
-  const hash = regionId.split("").reduce(function (a, b) {
+function hashString(s: string): number {
+  const hash = s.split("").reduce(function (a, b) {
     a = (a << 5) - a + b.charCodeAt(0);
     return a & a;
   }, 0);
@@ -32,10 +32,10 @@ function hashRegionId(regionId: RegionId): number {
 }
 
 export function faceColorForRegion(regionId: RegionId): string {
-  return FACE_COLORS[hashRegionId(regionId) % FACE_COLORS.length];
+  return FACE_COLORS[hashString(regionId) % FACE_COLORS.length];
 }
 
-export function edgeColorForEdge(edgeId: number): string {
+export function edgeColorForEdge(edgeId: EdgeId): string {
   return EDGE_COLORS[edgeId % EDGE_COLORS.length];
 }
 
@@ -44,24 +44,28 @@ export function clearRendering() {
 }
 
 export function renderEdges(scene: Scene) {
-  for (const [edge, [point1, point2]] of scene.edges()) {
-    const line = new paper.Path.Line(
-      scene.getPoint(point1),
-      scene.getPoint(point2)
-    );
-    line.strokeColor = new paper.Color(EDGE_COLORS[edge % EDGE_COLORS.length]);
+  for (const [edge, [point1Id, point2Id]] of scene.edges()) {
+    const point1 = scene.getPoint(point1Id);
+    const point2 = scene.getPoint(point2Id);
+    const line = new paper.Path.Line(point1, point2);
+    line.strokeColor = new paper.Color(edgeColorForEdge(edge));
     line.strokeWidth = 2;
     line.strokeCap = "round";
 
-    const offset = new paper.Point(2, -2);
+    const text = new paper.PointText(point1.add(point2).divide(2));
+    text.fontSize = 6;
+    text.content = `${edge}`;
+    text.justification = "center";
 
-    const text1 = new paper.PointText(scene.getPoint(point1).add(offset));
-    text1.fontSize = 6;
-    text1.content = `${point1}`;
+    const pointOffset = new paper.Point(2, -2);
 
-    const text2 = new paper.PointText(scene.getPoint(point2).add(offset));
-    text2.fontSize = 6;
-    text2.content = `${point2}`;
+    // const text1 = new paper.PointText(point1.add(pointOffset));
+    // text1.fontSize = 6;
+    // text1.content = `${point1Id}`;
+
+    // const text2 = new paper.PointText(point2.add(pointOffset));
+    // text2.fontSize = 6;
+    // text2.content = `${point2Id}`;
   }
 }
 
@@ -77,9 +81,9 @@ export function renderRegions(
     regionPath.closed = true;
     regionPath.fillColor = new paper.Color(faceColorForRegion(regionId));
 
-    const text = new paper.PointText(regionPath.interiorPoint);
-    text.fontSize = 6;
-    text.content = `${regionId}`;
-    text.justification = "center";
+    // const text = new paper.PointText(regionPath.interiorPoint);
+    // text.fontSize = 6;
+    // text.content = `${regionId}`;
+    // text.justification = "center";
   }
 }

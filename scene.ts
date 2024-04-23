@@ -43,6 +43,10 @@ export class Scene {
   }
 
   addEdge(point1: PointId, point2: PointId) {
+    if (point1 === point2) {
+      return;
+    }
+
     const id = _nextEdgeId;
     this._edges.set(id, [point1, point2]);
     _nextEdgeId++;

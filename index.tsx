@@ -42,6 +42,7 @@ const regions = findRegions(flattened);
 
 setInterval(() => {
   clearRendering();
+  // renderEdges(scene);
   renderRegions(regions, flattened);
   renderEdges(flattened);
 }, 1000 / 60);

@@ -28,8 +28,7 @@ function removeIntersectionOnce(scene: Scene, edgeId: EdgeId) {
         continue;
       }
 
-      const intersectionId = `${edgeId}x${otherId}`;
-      const intersectionPoint = scene.addPoint(intersection, intersectionId);
+      const intersectionPoint = scene.addPoint(intersection, `${edgeId}x${otherId}`);
 
       scene.addEdge(point1, intersectionPoint);
       scene.addEdge(intersectionPoint, point2);
@@ -38,6 +37,7 @@ function removeIntersectionOnce(scene: Scene, edgeId: EdgeId) {
 
       scene.removeEdge(edgeId);
       scene.removeEdge(otherId);
+      console.log(`deleting ${edgeId} and ${otherId}`);
 
       return true;
     }
