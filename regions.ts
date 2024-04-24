@@ -42,7 +42,7 @@ function cycleToEdges(cycle: Array<PointId>): Set<string> {
   return result;
 }
 
-function* enumerate<T>(it: Iterable<T>): Iterable<[number, T]> {
+export function* enumerateIndexAndItem<T>(it: Iterable<T>): Iterable<[number, T]> {
   let i = 0;
   for (const item of it) {
     yield [i, item];
@@ -77,12 +77,12 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
   // find cycles that do not contain any other cycles
   const minimalCycles = new Map<RegionId, Array<PointId>>();
 
-  for (const [i, [regionId, [cycle, path]]] of enumerate(regions)) {
+  for (const [i, [regionId, [cycle, path]]] of enumerateIndexAndItem(regions)) {
     let containsOtherCycle = false;
     let cycleSet = new Set(cycle);
     let edgesSet = cycleToEdges(cycle);
 
-    for (const [j, [otherRegionId, [otherCycle, _]]] of enumerate(regions)) {
+    for (const [j, [otherRegionId, [otherCycle, _]]] of enumerateIndexAndItem(regions)) {
       if (regionId === otherRegionId) {
         continue;
       }
@@ -125,9 +125,9 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
     }
   }
 
-  console.log(
-    `checked ${regions.size} regions, found ${minimalCycles.size} minimal cycles`
-  );
+  // console.log(
+  //   `checked ${regions.size} regions, found ${minimalCycles.size} minimal cycles`
+  // );
 
   return minimalCycles;
 }

@@ -1,8 +1,9 @@
 import paper from "paper";
 import seedrandom from "seedrandom";
 import { findSplitTarget, splitEdge } from "./flatten";
-import { RegionId, findRegions } from "./regions";
+import { RegionId, enumerateIndexAndItem, findRegions } from "./regions";
 import { EdgeId, PointId, Scene } from "./scene";
+import { Runner } from "./genetic";
 
 export class RoomsDefinition {
   private _rooms: Array<number>;
@@ -13,8 +14,12 @@ export class RoomsDefinition {
     this._listeners = [];
   }
 
-  rooms(): ReadonlyArray<number> {
+  roomWeights(): ReadonlyArray<number> {
     return this._rooms;
+  }
+
+  numRooms(): number {
+    return this._rooms.length;
   }
 
   addListener(listener: () => void) {
@@ -332,7 +337,7 @@ export function scoreRooms(
   // Room 'roundness' score
   const roundnessScores = [];
   {
-    for (const { circumference, area, _ } of sortedRegions) {
+    for (const { circumference, area } of sortedRegions) {
       const ideal = 1 / 16;
       const roundness = area / (circumference * circumference);
       const roundnessScore =
@@ -355,27 +360,63 @@ export function scoreRooms(
 export function generateRooms(
   scene: Scene,
   cycleIds: Array<PointId>,
-  rooms: ReadonlyArray<number>,
-  seed: number = 999
+  roomWeights: ReadonlyArray<number>,
+  cutOffsets: ReadonlyArray<number>
 ): Map<RegionId, Array<PointId>> {
-  if (rooms.length === 0) {
+  if (roomWeights.length === 0) {
     return new Map();
   }
 
-  const random = seedrandom(`${seed}`);
   const cycle = cycleIds.map((pointId) => scene.getPoint(pointId));
   const winding = windingOfCycle(cycle);
 
   let regions = new Map();
-  for (let i = 0; i < rooms.length * 2; i++) {
+  for (const [i, t] of enumerateIndexAndItem(cutOffsets)) {
     regions = findRegions(scene);
-    if (regions.size === rooms.length) {
+    if (regions.size === roomWeights.length) {
       break;
     }
-
-    const t = random();
     makeCut(scene, cycle, winding, t, `${i}`);
   }
 
   return regions;
+}
+
+export function randomCutGenerator(
+  numRooms: number,
+  seed: string
+): () => Array<number> {
+  const random = seedrandom(`${seed}`);
+
+  return () => {
+    const offsets: Array<number> = [];
+    for (let i = 1; i < numRooms; i++) {
+      offsets.push(random());
+    }
+    return offsets;
+  };
+}
+
+export function createRoomPartitioner(
+  source: Readonly<Scene>,
+  cycleIds: Array<PointId>,
+  roomWeights: ReadonlyArray<number>
+): Runner<{
+  scene: Scene;
+  regions: Map<RegionId, Array<PointId>>;
+}> {
+  const scene = source.clone();
+
+  return (parameters: Array<number>) => {
+    const regions = generateRooms(scene, cycleIds, roomWeights, parameters);
+    const score = scoreRooms(scene, regions, roomWeights);
+    return {
+      score,
+      result: {
+        scene: scene.clone(),
+        regions: regions,
+      },
+      parameters,
+    };
+  };
 }

@@ -36,17 +36,21 @@
     gap: 8px;
   }
 
-  #container>* {
-    border-radius: 8px;
-  }
-
   #container>div {
     flex: 1;
     overflow: hidden;
   }
 
+  .many {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   canvas {
     background-color: var(--white);
+    border-radius: 8px;
   }
 
   textarea {
@@ -56,6 +60,8 @@
     white-space: pre;
     overflow-wrap: normal;
     overflow-x: hidden;
+
+    border-radius: 8px;
   }
 </style>
 

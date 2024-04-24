@@ -7,7 +7,8 @@ import { clearRendering, renderEdges, renderHandles, renderPoints, renderRegions
 import { EditBehavior } from "./interactions";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea } from "./dom";
 import { setup } from "paper/dist/paper-core";
-import { defaultRoomsDefinition, generateRooms, scoreRooms } from "./rooms";
+import { createRoomPartitioner, defaultRoomsDefinition, generateRooms, randomCutGenerator, scoreRooms } from "./rooms";
+import {  pickBest } from "./genetic";
 
 const queryString = window.location.search;
 if (queryString === '?rooms') {
@@ -17,18 +18,18 @@ if (queryString === '?rooms') {
   encodedTextArea.style.flex = "0.2";
   containerEl.appendChild(encodedTextArea);
 
-  const div1El = document.createElement("div");
-  containerEl.appendChild(div1El);
+  const editEl = document.createElement("div");
+  containerEl.appendChild(editEl);
 
-  const div2El = document.createElement("div");
-  containerEl.appendChild(div2El);
+  const manyEl = document.createElement("div");
+  manyEl.className = "many";
+  containerEl.appendChild(manyEl);
 
   const roomsTextArea = document.createElement("textarea");
   roomsTextArea.style.flex = "0.2";
   containerEl.appendChild(roomsTextArea);
 
-  const paper1 = setupPaper(div1El);
-  const paper2 = setupPaper(div2El);
+  const paper1 = setupPaper(editEl);
 
   const roomsDefintion = defaultRoomsDefinition();
   const scene = singlePolygon();
@@ -47,10 +48,26 @@ if (queryString === '?rooms') {
     regions = findRegions(flattened);
 
     const cycle = sortedRegions(regions)[0];
-    roomScene = flattened.subset(cycle);
-    roomRegions = generateRooms(roomScene, cycle, roomsDefintion.rooms());
 
-    console.log(scoreRooms(roomScene, roomRegions, roomsDefintion.rooms()));
+    const roomWeights = roomsDefintion.roomWeights();
+    const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
+    const initializer = randomCutGenerator(roomWeights.length, 'zxcv');
+
+    const results = pickBest(runner, initializer, {
+      populationSize: 100,
+      numGenerations: 10,
+      mutationRate: 0.1,
+      survivalRate: 0.2,
+    });
+
+    roomScene = results.result.scene;
+    roomRegions = results.result.regions;
+
+    // const cuts = randomCutOffsets(roomsDefintion.numRooms(), 'zxcv');
+    // console.log(cuts);
+    // roomRegions = generateRooms(roomScene, cycle, roomsDefintion.rooms(), cuts);
+
+    // console.log(scoreRooms(roomScene, roomRegions, roomsDefintion.rooms()));
   }
 
   let _generation = -1;
@@ -61,16 +78,10 @@ if (queryString === '?rooms') {
     }
 
     clearRendering(paper1);
-    renderRegions(paper1, regions, flattened);
-    renderEdges(paper1, flattened);
-    renderPoints(paper1, flattened);
+    renderRegions(paper1, roomRegions, roomScene);
+    renderEdges(paper1, roomScene);
+    renderPoints(paper1, scene);
     renderHandles(paper1, editBehavior1.renderHints());
-
-    clearRendering(paper2);
-    renderRegions(paper2, roomRegions, roomScene);
-    renderEdges(paper2, roomScene);
-    renderPoints(paper2, roomScene);
-    renderHandles(paper2, editBehavior2.renderHints());
   }
 
   setInterval(() => {
@@ -81,7 +92,6 @@ if (queryString === '?rooms') {
   update();
 
   const editBehavior1 = new EditBehavior(paper1, scene);
-  const editBehavior2 = new EditBehavior(paper2, scene);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

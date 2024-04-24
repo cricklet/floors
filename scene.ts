@@ -101,6 +101,13 @@ export class Scene {
     return result;
   }
 
+  clone(): Scene {
+    const result = new Scene();
+    result._points = new Map(this._points);
+    result._edges = new Map(this._edges);
+    return result;
+  }
+
   addListener(listener: () => void) {
     this._watcher.addListener(listener);
   }
