@@ -16,6 +16,8 @@ interface Dragging {
 
 interface AddEdge {
   kind: "add-edge";
+  selected: PointId;
+  potential: paper.Point;
 }
 
 interface Idle {
@@ -24,7 +26,7 @@ interface Idle {
   hover: paper.Point | undefined;
 }
 
-type State = Dragging | Idle;
+type State = Dragging | Idle | AddEdge;
 
 interface PointTarget {
   kind: "point";
@@ -46,6 +48,18 @@ interface SplitTarget {
 }
 
 type Target = PointTarget | IntersectionTarget | SplitTarget;
+
+export type RenderHint =
+  | {
+      kind: "point";
+      point: paper.Point;
+      state: PointRenderState;
+    }
+  | {
+      kind: "edge";
+      start: paper.Point;
+      end: paper.Point;
+    };
 
 export type PointRenderState = "hovered" | "selected" | "selected-hovered";
 
@@ -110,6 +124,24 @@ export class EditBehavior {
       selected: this.state.selected,
       hover: undefined,
     };
+
+    if (event.modifiers.shift && this.state.selected) {
+      const target = findTarget(this.scene, event.point);
+      if (target) {
+        this.state = {
+          kind: "add-edge",
+          selected: this.state.selected,
+          potential: target.point,
+        };
+      } else {
+        this.state = {
+          kind: "add-edge",
+          selected: this.state.selected,
+          potential: event.point,
+        };
+      }
+      return;
+    }
 
     const target = findTarget(this.scene, event.point);
     if (target?.kind === "point") {
@@ -182,17 +214,47 @@ export class EditBehavior {
     }
   }
 
-  renderHints(): Array<[paper.Point, PointRenderState]> {
-    const result: Array<[paper.Point, PointRenderState]> = [];
+  renderHints(): Array<RenderHint> {
+    const result: Array<RenderHint> = [];
     if (this.state.kind === "dragging") {
-      result.push([this.scene.getPoint(this.state.selected), "selected"]);
+      result.push({
+        kind: "point",
+        point: this.scene.getPoint(this.state.selected),
+        state: "selected",
+      });
     } else if (this.state.kind === "idle") {
       if (this.state.hover) {
-        result.push([this.state.hover, "hovered"]);
+        result.push({
+          kind: "point",
+          point: this.state.hover,
+          state: "hovered",
+        });
       }
       if (this.state.selected) {
-        result.push([this.scene.getPoint(this.state.selected), "selected"]);
+        result.push({
+          kind: "point",
+          point: this.scene.getPoint(this.state.selected),
+          state: "selected",
+        });
       }
+    } else if (this.state.kind === "add-edge") {
+      result.push({
+        kind: "edge",
+        start: this.scene.getPoint(this.state.selected),
+        end: this.state.potential,
+      });
+
+      result.push({
+        kind: "point",
+        point: this.scene.getPoint(this.state.selected),
+        state: "selected",
+      });
+
+      result.push({
+        kind: "point",
+        point: this.state.potential,
+        state: "hovered",
+      });
     }
 
     return result;

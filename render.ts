@@ -1,7 +1,7 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 import { RegionId } from "./regions";
-import { PointRenderState } from "./interactions";
+import { PointRenderState, RenderHint } from "./interactions";
 
 const EDGE_COLORS = [
   "#005f73",
@@ -64,23 +64,34 @@ const SELECTED_HOVERED: PointStyle = ["#ffffff", "#0cf", 3];
 
 export function renderHandles(
   scope: paper.PaperScope,
-  points: Array<[paper.Point, PointRenderState]>
+  hints: Array<RenderHint>
 ) {
-  for (const [point, state] of points) {
-    const [fill, stroke, size] =
-      state === "hovered"
-        ? HOVER
-        : state === "selected"
-        ? SELECTED
-        : state === "selected-hovered"
-        ? SELECTED_HOVERED
-        : DEFAULT;
+  for (const hint of hints) {
+    if (hint.kind === "point") {
+      const { point, state } = hint;
+      const [fill, stroke, size] =
+        state === "hovered"
+          ? HOVER
+          : state === "selected"
+          ? SELECTED
+          : state === "selected-hovered"
+          ? SELECTED_HOVERED
+          : DEFAULT;
 
-    const circle = new paper.Path.Circle(point, size);
-    circle.fillColor = new paper.Color(fill);
-    circle.strokeColor = new paper.Color(stroke);
-    circle.strokeWidth = 1;
-    scope.project.activeLayer.addChild(circle);
+      const circle = new paper.Path.Circle(point, size);
+      circle.fillColor = new paper.Color(fill);
+      circle.strokeColor = new paper.Color(stroke);
+      circle.strokeWidth = 1;
+      scope.project.activeLayer.addChild(circle);
+    } else if (hint.kind === "edge") {
+      const { start, end } = hint;
+
+      const line = new paper.Path.Line(start, end);
+      line.strokeColor = new paper.Color("#08a");
+      line.strokeWidth = 2;
+      line.strokeCap = "round";
+      scope.project.activeLayer.addChild(line);
+    }
   }
 }
 
