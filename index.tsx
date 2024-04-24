@@ -6,6 +6,8 @@ import { findRegions } from "./regions";
 import { clearRendering, renderEdges, renderHandles, renderPoints, renderRegions } from "./render";
 import { EditBehavior } from "./interactions";
 
+const textArea = document.getElementById("state") as HTMLTextAreaElement;
+
 function createPaper(canvasId: string): paper.PaperScope {
   const canvasEl = document.getElementById(canvasId) as HTMLCanvasElement;
   const divEl = canvasEl.parentElement as HTMLDivElement;
@@ -33,7 +35,7 @@ function createPaper(canvasId: string): paper.PaperScope {
 const paper1 = createPaper("canvas1");
 const paper2 = createPaper("canvas2");
 
-const scene = new Scene();
+let scene = new Scene();
 
 /*
  a b c
@@ -58,25 +60,26 @@ scene.addEdge(g, a);
 scene.addEdge(b, h);
 scene.addEdge(d, f);
 
-// scene.addEdge(a, c);
-// scene.addEdge(b, h);
-// scene.addEdge(d, f);
+// On paste, decode
+textArea.addEventListener('paste', (event) => {
+  event.preventDefault();
+  const text = event.clipboardData?.getData('text') || '';
 
-function updateScenes(): [Scene, Map<string, Array<string>>] {
-  const flattened = flattenScene(scene);
-  const regions = findRegions(flattened);
+  scene.decode(text);
+});
 
-  return [flattened, regions];
-}
+let flattened = new Scene();
+let regions = new Map<string, Array<string>>();
+let currentGeneration = -1;
 
-let [flattened, regions] = updateScenes();
-
-let currentGeneration = scene.generation();
-
-setInterval(() => {
+function update() {
   if (currentGeneration !== scene.generation()) {
     currentGeneration = scene.generation();
-    [flattened, regions] = updateScenes();
+
+    flattened = flattenScene(scene);
+    regions = findRegions(flattened);
+
+    textArea.value = scene.encode();
   }
 
   clearRendering(paper1);
@@ -88,7 +91,10 @@ setInterval(() => {
   renderRegions(paper2, regions, flattened);
   renderEdges(paper2, flattened);
   renderPoints(paper2, flattened);
+}
 
+setInterval(() => {
+  update();
 }, 1000 / 60);
 
 const editBehavior = new EditBehavior(paper1, scene);
