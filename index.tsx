@@ -54,7 +54,13 @@ if (queryString === '?rooms') {
     console.log(scoreRooms(roomScene, roomRegions, roomsDefintion.rooms()));
   }
 
+  let _generation = -1;
   function render() {
+    if (_generation !== scene.generation()) {
+      _generation = scene.generation();
+      update();
+    }
+
     clearRendering(paper1);
     renderRegions(paper1, regions, flattened);
     renderEdges(paper1, flattened);
@@ -65,17 +71,18 @@ if (queryString === '?rooms') {
     renderRegions(paper2, roomRegions, roomScene);
     renderEdges(paper2, roomScene);
     renderPoints(paper2, roomScene);
+    renderHandles(paper2, editBehavior2.renderHints());
   }
 
   setInterval(() => {
     render();
   }, 1000 / 60);
 
-  scene.addListener(update);
   roomsDefintion.addListener(update);
   update();
 
   const editBehavior1 = new EditBehavior(paper1, scene);
+  const editBehavior2 = new EditBehavior(paper2, scene);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

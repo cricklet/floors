@@ -236,9 +236,9 @@ function makeCut(
 
   scene.addEdge(startPointId, endPointId);
 
-  console.log(
-    `cut edges ${startEdgeId} and ${endEdgeId} at ${start} and ${endPoint}`
-  );
+  // console.log(
+  //   `cut edges ${startEdgeId} and ${endEdgeId} at ${start} and ${endPoint}`
+  // );
   return true;
 }
 
@@ -261,6 +261,14 @@ function sum(iter: Iterable<number>): number {
   let total = 0;
   for (const value of iter) {
     total += value;
+  }
+  return total;
+}
+
+function mult(iter: Iterable<number>): number {
+  let total = 1;
+  for (const value of iter) {
+    total *= value;
   }
   return total;
 }
@@ -298,9 +306,8 @@ export function scoreRooms(
   const expectedNumRooms = sortedWeights.length;
   const actualNumRooms = sortedRegions.length;
 
-  let overall = 0;
-
   // Room area scores
+  const areaScores = [];
   {
     const averageRoomArea =
       sum(sortedRegions.map((region) => region.area)) / expectedNumRooms;
@@ -318,11 +325,12 @@ export function scoreRooms(
       nomralizedRoomWeights
     )) {
       const roomScore = 1 - Math.abs(area - weight) / Math.max(area, weight);
-      overall += roomScore / expectedNumRooms;
+      areaScores.push(roomScore);
     }
   }
 
   // Room 'roundness' score
+  const roundnessScores = [];
   {
     for (const { circumference, area, _ } of sortedRegions) {
       const ideal = 1 / 16;
@@ -330,20 +338,18 @@ export function scoreRooms(
       const roundnessScore =
         1 - Math.abs(roundness - ideal) / Math.max(roundness, ideal);
 
-      overall += roundnessScore / sortedRegions.length;
+      roundnessScores.push(roundnessScore);
     }
   }
 
   // Correct number of rooms
-  {
-    const numRoomsScore =
-      1 -
-      Math.abs(expectedNumRooms - actualNumRooms) /
-        Math.max(expectedNumRooms, actualNumRooms);
-    overall += numRoomsScore;
-  }
+  let numRoomsScore =
+    1 -
+    Math.abs(expectedNumRooms - actualNumRooms) /
+      Math.max(expectedNumRooms, actualNumRooms);
 
-  return overall / 3;
+  const overall = mult(areaScores) * mult(roundnessScores) * numRoomsScore;
+  return overall;
 }
 
 export function generateRooms(
