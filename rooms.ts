@@ -77,7 +77,13 @@ function circumferenceOfCycle(cycle: Array<paper.Point>): number {
   return circumference;
 }
 
-function pointAlongCycle(cycle: Array<paper.Point>, t: number): paper.Point {
+function pointAlongCycle(
+  cycle: Array<paper.Point>,
+  t: number
+): {
+  point: paper.Point;
+  edge: [paper.Point, paper.Point];
+} {
   const circumference = circumferenceOfCycle(cycle);
   const target = t * circumference;
 
@@ -86,7 +92,10 @@ function pointAlongCycle(cycle: Array<paper.Point>, t: number): paper.Point {
   )) {
     if (target >= start && target <= end) {
       const progress = (target - start) / (end - start);
-      return point1.add(point2.subtract(point1).multiply(progress));
+      return {
+        point: point1.add(point2.subtract(point1).multiply(progress)),
+        edge: [point1, point2],
+      };
     }
   }
 
@@ -176,20 +185,13 @@ function raycast(
 }
 
 function cutDirectionForEdge(
-  scene: Scene,
-  edgeId: EdgeId,
+  edge: [paper.Point, paper.Point],
   winding: Winding
 ): paper.Point | undefined {
-  const [edgePointId1, edgePointId2] = scene.getEdge(edgeId);
-  const [edgePoint1, edgePoint2] = [
-    scene.getPoint(edgePointId1),
-    scene.getPoint(edgePointId2),
-  ];
+  let [edgePoint1, edgePoint2] = edge;
 
   if (edgePoint1.getDistance(edgePoint2) < 0.01) {
-    console.error(
-      `edge ${edgeId} is too short to split ${edgePoint1}, ${edgePoint2}`
-    );
+    console.error(`edge is too short to split ${edgePoint1}, ${edgePoint2}`);
     return undefined;
   }
 
@@ -210,7 +212,7 @@ function makeCut(
   t: number,
   cutPrefix: string = ""
 ): boolean {
-  const start = pointAlongCycle(cycle, t);
+  const { point: start, edge: startEdgePoints } = pointAlongCycle(cycle, t);
   const startSplit = findSplitTarget(scene, start, 0.1);
   if (!startSplit) {
     console.error(`couldn't find edge to split at ${start} in cycle ${cycle}`);
@@ -218,7 +220,7 @@ function makeCut(
   }
 
   const [_, startEdgeId] = startSplit;
-  const cutDirection = cutDirectionForEdge(scene, startEdgeId, winding);
+  const cutDirection = cutDirectionForEdge(startEdgePoints, winding);
   if (!cutDirection) {
     console.error(`couldn't find cut direction for edge ${startEdgeId}`);
     return false;
