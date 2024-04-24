@@ -47,7 +47,12 @@ interface SplitTarget {
   edgeToSplit: EdgeId;
 }
 
-type Target = PointTarget | IntersectionTarget | SplitTarget;
+interface FloatingTarget {
+  kind: "floating";
+  point: paper.Point;
+}
+
+type Target = PointTarget | IntersectionTarget | SplitTarget | FloatingTarget;
 
 export type RenderHint =
   | {
@@ -92,17 +97,36 @@ function findTargetForNewEdge(
     excludeEdges.add(edgeId);
   }
 
-  return findTarget(scene, end, excludePoints, excludeEdges);
+  const target = findTarget(scene, end);
+  if (!target) {
+    return {
+      kind: "floating",
+      point: end,
+    };
+  }
+
+  if (target.kind === "point") {
+    if (!excludePoints.has(target.pointId)) {
+      return target;
+    }
+  } else if (target.kind === "intersection") {
+    if (
+      intersectionSet(excludeEdges, new Set(target.edgesToSplit)).size === 0
+    ) {
+      return target;
+    }
+  } else if (target.kind === "split") {
+    if (!excludeEdges.has(target.edgeToSplit)) {
+      return target;
+    }
+  }
+
+  return undefined;
 }
 
-function findTarget(
-  scene: Scene,
-  point: paper.Point,
-  excludePoints: Set<PointId> = new Set(),
-  excludeEdges: Set<EdgeId> = new Set()
-): Target | undefined {
+function findTarget(scene: Scene, point: paper.Point): Target | undefined {
   for (const [pointId, scenePoint] of scene.points()) {
-    if (scenePoint.getDistance(point) < 5 && !excludePoints.has(pointId)) {
+    if (scenePoint.getDistance(point) < 5) {
       return {
         kind: "point",
         pointId,
@@ -114,9 +138,6 @@ function findTarget(
 
   const intersections: Map<paper.Point, Set<EdgeId>> = findIntersections(scene);
   for (const [intersection, edgesToSplit] of intersections) {
-    if (intersectionSet(edgesToSplit, excludeEdges).size > 0) {
-      continue;
-    }
     if (intersection.getDistance(point) < 5) {
       return {
         kind: "intersection",
@@ -129,13 +150,35 @@ function findTarget(
   const splitTarget = findSplitTarget(scene, point, 5);
   if (splitTarget) {
     const [splitPoint, edgeToSplit] = splitTarget;
-    if (!excludeEdges.has(edgeToSplit)) {
-      return {
-        kind: "split",
-        point: splitPoint,
-        edgeToSplit,
-      };
+    return {
+      kind: "split",
+      point: splitPoint,
+      edgeToSplit,
+    };
+  }
+
+  return undefined;
+}
+
+function getOrAddPoint(scene: Scene, target: Target): PointId | undefined {
+  if (target?.kind === "point") {
+    for (const edgeId of target.edgesToSplit) {
+      splitEdge(scene, edgeId, target.pointId);
     }
+    return target.pointId;
+  } else if (target?.kind === "intersection") {
+    const intersectionPoint = scene.addPoint(target.point);
+    for (const edgeId of target.edgesToSplit) {
+      splitEdge(scene, edgeId, intersectionPoint);
+    }
+    return intersectionPoint;
+  } else if (target?.kind === "split") {
+    const intersectionPoint = scene.addPoint(target.point);
+    splitEdge(scene, target.edgeToSplit, intersectionPoint);
+    return intersectionPoint;
+  } else if (target?.kind === "floating") {
+    const pointId = scene.addPoint(target.point);
+    return pointId;
   }
 
   return undefined;
@@ -178,12 +221,6 @@ export class EditBehavior {
           selected: this.state.selected,
           potential: target.point,
         };
-      } else {
-        this.state = {
-          kind: "add-edge",
-          selected: this.state.selected,
-          potential: event.point,
-        };
       }
       return;
     }
@@ -199,44 +236,38 @@ export class EditBehavior {
   }
 
   onMouseDown(event: paper.MouseEvent) {
+    const previouslySelected = this.state.selected;
     this.state = {
       kind: "idle",
       selected: undefined,
       hover: undefined,
     };
 
-    const target = findTarget(this.scene, event.point);
-    if (target?.kind === "point") {
-      for (const edgeId of target.edgesToSplit) {
-        splitEdge(this.scene, edgeId, target.pointId);
-      }
-      this.state = {
-        kind: "dragging",
-        mouseStart: event.point,
-        pointStart: target.point,
-        selected: target.pointId,
-      };
-    } else if (target?.kind === "intersection") {
-      const intersectionPoint = this.scene.addPoint(target.point);
-      for (const edgeId of target.edgesToSplit) {
-        splitEdge(this.scene, edgeId, intersectionPoint);
-      }
-      this.state = {
-        kind: "dragging",
-        mouseStart: event.point,
-        pointStart: target.point,
-        selected: intersectionPoint,
-      };
-    } else if (target?.kind === "split") {
-      const intersectionPoint = this.scene.addPoint(target.point);
-      splitEdge(this.scene, target.edgeToSplit, intersectionPoint);
-      this.state = {
-        kind: "dragging",
-        mouseStart: event.point,
-        pointStart: target.point,
-        selected: intersectionPoint,
-      };
+    const shouldCreateEdge = previouslySelected && event.modifiers.shift;
+
+    const target = shouldCreateEdge
+      ? findTargetForNewEdge(this.scene, previouslySelected, event.point)
+      : findTarget(this.scene, event.point);
+
+    if (!target) {
+      return;
     }
+
+    const newPointId = getOrAddPoint(this.scene, target);
+    if (!newPointId) {
+      return;
+    }
+
+    if (shouldCreateEdge) {
+      this.scene.addEdge(previouslySelected, newPointId);
+    }
+
+    this.state = {
+      kind: "dragging",
+      mouseStart: event.point,
+      pointStart: target.point,
+      selected: newPointId,
+    };
   }
 
   onMouseDrag(event: paper.MouseEvent) {
