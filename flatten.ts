@@ -130,7 +130,7 @@ export function findIntersections(
 
 export function findEdgesSplitByPoint(
   scene: Readonly<Scene>,
-  target: paper.Point
+  target: paper.Point,
 ): Array<EdgeId> {
   const result = [];
 
@@ -155,4 +155,31 @@ export function findEdgesSplitByPoint(
   }
 
   return result;
+}
+
+export function findSplitTarget(
+  scene: Readonly<Scene>,
+  target: paper.Point,
+): [paper.Point, EdgeId] | undefined {
+  const edgeIds = Array.from(scene.edges().keys()).toSorted();
+  for (const edgeId of edgeIds) {
+    const [pointId1, pointId2] = scene.edges().get(edgeId)!;
+    const [point1, point2] = [
+      scene.getPoint(pointId1),
+      scene.getPoint(pointId2),
+    ];
+
+    if (point1 === target || point2 === target) {
+      // The target is one of the endpoints (not a split)
+      continue;
+    }
+
+    const line = new paper.Path.Line(point1, point2);
+    const nearest = line.getNearestPoint(target);
+    if (nearest.getDistance(target) < 10) {
+      return [nearest, edgeId];
+    }
+  }
+
+  return undefined;
 }

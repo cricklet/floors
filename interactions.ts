@@ -1,12 +1,21 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
-import { findEdgesSplitByPoint, findIntersections, splitEdge } from "./flatten";
+import {
+  findEdgesSplitByPoint,
+  findIntersections,
+  findSplitTarget,
+  splitEdge,
+} from "./flatten";
 
 interface Dragging {
   kind: "dragging";
   mouseStart: paper.Point;
   pointStart: paper.Point;
   selected: PointId;
+}
+
+interface AddEdge {
+  kind: "add-edge";
 }
 
 interface Idle {
@@ -30,7 +39,13 @@ interface IntersectionTarget {
   edgesToSplit: Array<EdgeId>;
 }
 
-type Target = PointTarget | IntersectionTarget;
+interface SplitTarget {
+  kind: "split";
+  point: paper.Point;
+  edgeToSplit: EdgeId;
+}
+
+type Target = PointTarget | IntersectionTarget | SplitTarget;
 
 export type PointRenderState = "hovered" | "selected" | "selected-hovered";
 
@@ -56,6 +71,16 @@ function findTarget(scene: Scene, point: paper.Point): Target | undefined {
         edgesToSplit: Array.from(edgesToSplit),
       };
     }
+  }
+
+  const splitTarget = findSplitTarget(scene, point);
+  if (splitTarget) {
+    const [splitPoint, edgeToSplit] = splitTarget;
+    return {
+      kind: "split",
+      point: splitPoint,
+      edgeToSplit,
+    };
   }
 
   return undefined;
@@ -91,6 +116,8 @@ export class EditBehavior {
       this.state.hover = target.point;
     } else if (target?.kind === "intersection") {
       this.state.hover = target.point;
+    } else if (target?.kind === "split") {
+      this.state.hover = target.point;
     }
   }
 
@@ -117,6 +144,15 @@ export class EditBehavior {
       for (const edgeId of target.edgesToSplit) {
         splitEdge(this.scene, edgeId, intersectionPoint);
       }
+      this.state = {
+        kind: "dragging",
+        mouseStart: event.point,
+        pointStart: target.point,
+        selected: intersectionPoint,
+      };
+    } else if (target?.kind === "split") {
+      const intersectionPoint = this.scene.addPoint(target.point);
+      splitEdge(this.scene, target.edgeToSplit, intersectionPoint);
       this.state = {
         kind: "dragging",
         mouseStart: event.point,
