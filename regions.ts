@@ -50,6 +50,14 @@ function* enumerate<T>(it: Iterable<T>): Iterable<[number, T]> {
   }
 }
 
+export function sortedRegions(
+  regions: Map<RegionId, Array<PointId>>
+): Array<Array<PointId>> {
+  const keys = Array.from(regions.keys());
+  keys.sort();
+  return keys.map((key) => regions.get(key)!);
+}
+
 export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
   // find all cycles
   const cycles = findCyclesInEdges(scene);

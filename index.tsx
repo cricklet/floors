@@ -2,12 +2,12 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene, defaultScene, singlePolygon } from "./scene";
 import { flattenScene } from "./flatten";
-import { findRegions } from "./regions";
+import { findRegions, sortedRegions } from "./regions";
 import { clearRendering, renderEdges, renderHandles, renderPoints, renderRegions } from "./render";
 import { EditBehavior } from "./interactions";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea } from "./dom";
 import { setup } from "paper/dist/paper-core";
-import { defaultRoomsDefinition } from "./rooms";
+import { defaultRoomsDefinition, generateRooms } from "./rooms";
 
 const queryString = window.location.search;
 if (queryString === '?rooms') {
@@ -35,10 +35,15 @@ if (queryString === '?rooms') {
 
   let flattened = new Scene();
   let regions = new Map<string, Array<string>>();
+  let rooms: Array<Array<paper.Point>> = [];
 
   function update() {
     flattened = flattenScene(scene);
     regions = findRegions(flattened);
+
+    const cycle = sortedRegions(regions)[0];
+    const roomScene = flattened.subset(cycle);
+    rooms = generateRooms(roomScene, cycle, roomsDefintion.rooms());
   }
 
   function render() {

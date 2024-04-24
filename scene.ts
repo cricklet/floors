@@ -27,6 +27,10 @@ function combineAndHash(originalString: string, existingHash: number) {
   return simpleHash(combinedHash.toString());
 }
 
+function generateEdgeId(point1: PointId, point2: PointId): EdgeId {
+  return [point1, point2].sort().join("");
+}
+
 let _nextPointId = 0;
 
 export class Watcher {
@@ -83,6 +87,20 @@ export class Scene {
     return hash;
   }
 
+  subset(cycle: Array<PointId>): Scene {
+    const result = new Scene();
+    for (const pointId of cycle) {
+      result._points.set(pointId, this._points.get(pointId)!);
+    }
+    for (let i = 0; i < cycle.length; i++) {
+      const point1 = cycle[i];
+      const point2 = cycle[(i + 1) % cycle.length];
+      const edgeId = generateEdgeId(point1, point2);
+      result._edges.set(edgeId, [point1, point2]);
+    }
+    return result;
+  }
+
   addListener(listener: () => void) {
     this._watcher.addListener(listener);
   }
@@ -132,7 +150,7 @@ export class Scene {
       return;
     }
 
-    const id = [point1, point2].sort().join("");
+    const id = generateEdgeId(point1, point2);
     this._edges.set(id, [point1, point2]);
 
     this._watcher.notify();
@@ -141,6 +159,10 @@ export class Scene {
   removeEdge(edgeId: EdgeId) {
     this._edges.delete(edgeId);
     this._watcher.notify();
+  }
+
+  getEdge(edgeId: EdgeId): [PointId, PointId] {
+    return this._edges.get(edgeId)!;
   }
 
   points(): ReadonlyMap<PointId, paper.Point> {
@@ -276,28 +298,41 @@ export function singlePolygon(): Scene {
   let scene = new Scene();
 
   /*
-   a b c
-   d   f
-   g h i
+   a
+  b c
   */
 
-  const a = scene.addPoint(new paper.Point(-50, -50), "a");
-  const b = scene.addPoint(new paper.Point(0, -50), "b");
-  const c = scene.addPoint(new paper.Point(50, -50), "c");
-  const d = scene.addPoint(new paper.Point(-50, 0), "d");
-  const f = scene.addPoint(new paper.Point(50, 0), "f");
-  const g = scene.addPoint(new paper.Point(-50, 50), "g");
-  const h = scene.addPoint(new paper.Point(0, 50), "h");
-  const i = scene.addPoint(new paper.Point(50, 50), "i");
+  const a = scene.addPoint(new paper.Point(0, -50), "a");
+  const b = scene.addPoint(new paper.Point(-50, 50), "b");
+  const c = scene.addPoint(new paper.Point(50, 50), "c");
 
   scene.addEdge(a, b);
   scene.addEdge(b, c);
-  scene.addEdge(c, f);
-  scene.addEdge(f, i);
-  scene.addEdge(i, h);
-  scene.addEdge(h, g);
-  scene.addEdge(g, d);
-  scene.addEdge(d, a);
+  scene.addEdge(a, c);
+
+  // /*
+  //  a b c
+  //  d   f
+  //  g h i
+  // */
+
+  // const a = scene.addPoint(new paper.Point(-50, -50), "a");
+  // const b = scene.addPoint(new paper.Point(0, -50), "b");
+  // const c = scene.addPoint(new paper.Point(50, -50), "c");
+  // const d = scene.addPoint(new paper.Point(-50, 0), "d");
+  // const f = scene.addPoint(new paper.Point(50, 0), "f");
+  // const g = scene.addPoint(new paper.Point(-50, 50), "g");
+  // const h = scene.addPoint(new paper.Point(0, 50), "h");
+  // const i = scene.addPoint(new paper.Point(50, 50), "i");
+
+  // scene.addEdge(a, b);
+  // scene.addEdge(b, c);
+  // scene.addEdge(c, f);
+  // scene.addEdge(f, i);
+  // scene.addEdge(i, h);
+  // scene.addEdge(h, g);
+  // scene.addEdge(g, d);
+  // scene.addEdge(d, a);
 
   return scene;
 }
