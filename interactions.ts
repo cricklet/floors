@@ -73,6 +73,28 @@ function intersectionSet<T>(a: Set<T>, b: Set<T>): Set<T> {
   return result;
 }
 
+function findTargetForNewEdge(
+  scene: Scene,
+  start: PointId,
+  end: paper.Point
+): Target | undefined {
+  const pointsMap: Map<PointId, Set<PointId>> = scene.pointToPoints();
+  const edgesMap: Map<PointId, Set<EdgeId>> = scene.pointToEdges();
+
+  const excludePoints = new Set<PointId>();
+  excludePoints.add(start);
+  for (const neighbor of pointsMap.get(start)!) {
+    excludePoints.add(neighbor);
+  }
+
+  const excludeEdges = new Set<EdgeId>();
+  for (const edgeId of edgesMap.get(start)!) {
+    excludeEdges.add(edgeId);
+  }
+
+  return findTarget(scene, end, excludePoints, excludeEdges);
+}
+
 function findTarget(
   scene: Scene,
   point: paper.Point,
@@ -91,7 +113,6 @@ function findTarget(
   }
 
   const intersections: Map<paper.Point, Set<EdgeId>> = findIntersections(scene);
-
   for (const [intersection, edgesToSplit] of intersections) {
     if (intersectionSet(edgesToSplit, excludeEdges).size > 0) {
       continue;
@@ -105,7 +126,7 @@ function findTarget(
     }
   }
 
-  const splitTarget = findSplitTarget(scene, point);
+  const splitTarget = findSplitTarget(scene, point, 5);
   if (splitTarget) {
     const [splitPoint, edgeToSplit] = splitTarget;
     if (!excludeEdges.has(edgeToSplit)) {
@@ -146,7 +167,11 @@ export class EditBehavior {
     };
 
     if (event.modifiers.shift && this.state.selected) {
-      const target = findTarget(this.scene, event.point);
+      const target = findTargetForNewEdge(
+        this.scene,
+        this.state.selected,
+        event.point
+      );
       if (target) {
         this.state = {
           kind: "add-edge",

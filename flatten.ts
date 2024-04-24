@@ -160,6 +160,7 @@ export function findEdgesSplitByPoint(
 export function findSplitTarget(
   scene: Readonly<Scene>,
   target: paper.Point,
+  distance: number
 ): [paper.Point, EdgeId] | undefined {
   const edgeIds = Array.from(scene.edges().keys()).toSorted();
   for (const edgeId of edgeIds) {
@@ -176,7 +177,7 @@ export function findSplitTarget(
 
     const line = new paper.Path.Line(point1, point2);
     const nearest = line.getNearestPoint(target);
-    if (nearest.getDistance(target) < 10) {
+    if (nearest.getDistance(target) < distance) {
       return [nearest, edgeId];
     }
   }
