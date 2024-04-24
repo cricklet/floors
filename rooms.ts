@@ -1,6 +1,7 @@
 import paper from "paper";
+import seedrandom from "seedrandom";
 import { findSplitTarget, splitEdge } from "./flatten";
-import { findRegions } from "./regions";
+import { RegionId, findRegions } from "./regions";
 import { EdgeId, PointId, Scene } from "./scene";
 
 export class RoomsDefinition {
@@ -196,7 +197,8 @@ function makeCut(
   scene: Scene,
   cycle: Array<paper.Point>,
   winding: Winding,
-  t: number
+  t: number,
+  cutPrefix: string = ""
 ): boolean {
   const start = pointAlongCycle(cycle, t);
   const startSplit = findSplitTarget(scene, start, 0.1);
@@ -222,57 +224,152 @@ function makeCut(
 
   const [endPoint, endEdgeId] = end;
 
-  const startPointId = scene.addPoint(start, `${startEdgeId}-${t}`);
+  if (cutPrefix === "") {
+    cutPrefix = `${t}`;
+  }
+
+  const startPointId = scene.addPoint(start, `${cutPrefix}-${startEdgeId}`);
   splitEdge(scene, startEdgeId, startPointId);
 
-  const endPointId = scene.addPoint(endPoint, `${endEdgeId}-${t}`);
+  const endPointId = scene.addPoint(endPoint, `${cutPrefix}-${endEdgeId}`);
   splitEdge(scene, endEdgeId, endPointId);
 
   scene.addEdge(startPointId, endPointId);
 
-  console.log(`cut edges ${startEdgeId} and ${endEdgeId} at ${start} and ${endPoint}`);
+  console.log(
+    `cut edges ${startEdgeId} and ${endEdgeId} at ${start} and ${endPoint}`
+  );
   return true;
+}
+
+function* zip<T extends any[]>(
+  ...iterables: { [I in keyof T]: Iterable<T[I]> }
+): Iterable<T> {
+  const iterators = iterables.map((it) => it[Symbol.iterator]());
+  let done = false;
+
+  while (!done) {
+    const items = iterators.map((it) => it.next());
+    done = items.some((item) => item.done);
+    if (!done) {
+      yield items.map((item) => item.value) as T;
+    }
+  }
+}
+
+function sum(iter: Iterable<number>): number {
+  let total = 0;
+  for (const value of iter) {
+    total += value;
+  }
+  return total;
+}
+
+export function scoreRooms(
+  scene: Scene,
+  regions: Map<RegionId, Array<PointId>>,
+  weights: ReadonlyArray<number>
+): number {
+  const sortedRegions: Array<{
+    regionId: RegionId;
+    pointIds: Array<PointId>;
+    path: paper.Path;
+    circumference: number;
+    area: number;
+  }> = [];
+
+  for (const [regionId, pointIds] of regions) {
+    const path = new paper.Path();
+    for (const pointId of pointIds) {
+      path.add(scene.getPoint(pointId));
+    }
+    path.closed = true;
+
+    const area = Math.abs(path.area);
+    const circumference = circumferenceOfCycle(
+      pointIds.map((pointId) => scene.getPoint(pointId))
+    );
+    sortedRegions.push({ regionId, pointIds, path, circumference, area });
+  }
+
+  sortedRegions.sort((a, b) => a.area - b.area);
+  const sortedWeights = weights.slice().sort((a, b) => a - b);
+
+  const expectedNumRooms = sortedWeights.length;
+  const actualNumRooms = sortedRegions.length;
+
+  let overall = 0;
+
+  // Room area scores
+  {
+    const averageRoomArea =
+      sum(sortedRegions.map((region) => region.area)) / expectedNumRooms;
+    const averageRoomWeight = sum(sortedWeights) / expectedNumRooms;
+
+    const normalizedRoomAreas = sortedRegions.map(
+      (region) => region.area / averageRoomArea
+    );
+    const nomralizedRoomWeights = sortedWeights.map(
+      (weight) => weight / averageRoomWeight
+    );
+
+    for (const [area, weight] of zip(
+      normalizedRoomAreas,
+      nomralizedRoomWeights
+    )) {
+      const roomScore = 1 - Math.abs(area - weight) / Math.max(area, weight);
+      overall += roomScore / expectedNumRooms;
+    }
+  }
+
+  // Room 'roundness' score
+  {
+    for (const { circumference, area, _ } of sortedRegions) {
+      const ideal = 1 / 16;
+      const roundness = area / (circumference * circumference);
+      const roundnessScore =
+        1 - Math.abs(roundness - ideal) / Math.max(roundness, ideal);
+
+      overall += roundnessScore / sortedRegions.length;
+    }
+  }
+
+  // Correct number of rooms
+  {
+    const numRoomsScore =
+      1 -
+      Math.abs(expectedNumRooms - actualNumRooms) /
+        Math.max(expectedNumRooms, actualNumRooms);
+    overall += numRoomsScore;
+  }
+
+  return overall / 3;
 }
 
 export function generateRooms(
   scene: Scene,
   cycleIds: Array<PointId>,
-  rooms: ReadonlyArray<number>
-): Array<Array<paper.Point>> {
+  rooms: ReadonlyArray<number>,
+  seed: number = 999
+): Map<RegionId, Array<PointId>> {
+  if (rooms.length === 0) {
+    return new Map();
+  }
+
+  const random = seedrandom(`${seed}`);
   const cycle = cycleIds.map((pointId) => scene.getPoint(pointId));
-
   const winding = windingOfCycle(cycle);
-  console.log(cycleIds, cycle, winding);
 
-  {
-    const regions = findRegions(scene);
-    console.log(regions.size);
+  let regions = new Map();
+  for (let i = 0; i < rooms.length * 2; i++) {
+    regions = findRegions(scene);
+    if (regions.size === rooms.length) {
+      break;
+    }
+
+    const t = random();
+    makeCut(scene, cycle, winding, t, `${i}`);
   }
 
-  makeCut(scene, cycle, winding, 0.2);
-  makeCut(scene, cycle, winding, 0.5);
-
-  const result: Array<Array<paper.Point>> = [];
-  {
-    const regions = findRegions(scene);
-    console.log(regions.size);
-    console.log(regions);
-  }
-
-  // let regions;
-  // while (true) {
-  //   regions = findRegions(scene);
-  //   if (regions.size >= rooms.length) {
-  //     break;
-  //   }
-
-  //   // Add a split
-  // }
-
-  // for (const [regionId, region] of regions) {
-  //   const points = region.map((pointId) => scene.getPoint(pointId));
-  //   result.push(points);
-  // }
-
-  return result;
+  return regions;
 }

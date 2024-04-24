@@ -71,8 +71,6 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
       path.add(scene.getPoint(pointId));
     }
     path.closed = true;
-    path.fillColor = new paper.Color(faceColorForRegion(regionId));
-
     regions.set(regionId, [cycle, path]);
   }
 

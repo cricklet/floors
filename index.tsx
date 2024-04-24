@@ -7,7 +7,7 @@ import { clearRendering, renderEdges, renderHandles, renderPoints, renderRegions
 import { EditBehavior } from "./interactions";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea } from "./dom";
 import { setup } from "paper/dist/paper-core";
-import { defaultRoomsDefinition, generateRooms } from "./rooms";
+import { defaultRoomsDefinition, generateRooms, scoreRooms } from "./rooms";
 
 const queryString = window.location.search;
 if (queryString === '?rooms') {
@@ -38,7 +38,6 @@ if (queryString === '?rooms') {
 
   let flattened = new Scene();
   let regions = new Map<string, Array<string>>();
-  let rooms: Array<Array<paper.Point>> = [];
 
   let roomScene = new Scene();
   let roomRegions = new Map<string, Array<string>>();
@@ -49,9 +48,10 @@ if (queryString === '?rooms') {
 
     const cycle = sortedRegions(regions)[0];
     roomScene = flattened.subset(cycle);
-    rooms = generateRooms(roomScene, cycle, roomsDefintion.rooms());
+    generateRooms(roomScene, cycle, roomsDefintion.rooms());
 
     roomRegions = findRegions(roomScene);
+    console.log(scoreRooms(roomScene, roomRegions, roomsDefintion.rooms()));
   }
 
   function render() {
