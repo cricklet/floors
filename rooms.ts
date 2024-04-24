@@ -286,6 +286,16 @@ function mult(iter: Iterable<number>): number {
   return total;
 }
 
+function avg(iter: Iterable<number>): number {
+  let total = 0;
+  let count = 0;
+  for (const value of iter) {
+    total += value;
+    count += 1;
+  }
+  return total / count;
+}
+
 export function scoreRooms(
   scene: Scene,
   regions: Map<RegionId, Array<PointId>>,
@@ -368,7 +378,8 @@ export function scoreRooms(
 
   // console.log(`correct num rooms score: ${numRoomsScore}`);
 
-  const overall = sum(areaScores) * sum(roundnessScores) * numRoomsScore;
+  // const overall = Math.floor((avg(areaScores) + avg(roundnessScores)) * numRoomsScore * 100);
+  const overall = numRoomsScore * 100;
   return overall;
 }
 

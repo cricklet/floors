@@ -54,7 +54,7 @@ if (queryString === '?rooms') {
     const cycle = sortedRegions(regions)[0];
     const roomWeights = roomsDefintion.roomWeights();
 
-    const runner = createRoomPartitioner(flattened, cycle, roomWeights);
+    const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
     const startingPopulation = generateRandomCuts(10, roomsDefintion.numRooms(), 'asdf');
     allResults = evolve<PartitionResult>(runner, startingPopulation, {
       numGenerations: 10,
@@ -73,7 +73,7 @@ if (queryString === '?rooms') {
       update();
       manyRenderer.render(
         allResults.map((result) => result.scene),
-        allResults.map((result) => `${result.score.toFixed(2)} (${result.generation})`)
+        allResults.map((result) => `${result.score.toFixed(0)} (${result.generation})`)
       );
     }
 
