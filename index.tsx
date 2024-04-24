@@ -48,9 +48,8 @@ if (queryString === '?rooms') {
 
     const cycle = sortedRegions(regions)[0];
     roomScene = flattened.subset(cycle);
-    generateRooms(roomScene, cycle, roomsDefintion.rooms());
+    roomRegions = generateRooms(roomScene, cycle, roomsDefintion.rooms());
 
-    roomRegions = findRegions(roomScene);
     console.log(scoreRooms(roomScene, roomRegions, roomsDefintion.rooms()));
   }
 
