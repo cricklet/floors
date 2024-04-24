@@ -18,18 +18,7 @@ function findCyclesInEdges(scene: Readonly<Scene>): Array<Array<PointId>> {
     return _cachedCycles;
   }
 
-  const edges = scene.edges();
-  const graph = new Map<PointId, PointId[]>();
-  for (const [_, [point1, point2]] of edges) {
-    if (!graph.has(point1)) {
-      graph.set(point1, []);
-    }
-    if (!graph.has(point2)) {
-      graph.set(point2, []);
-    }
-    graph.get(point1)!.push(point2);
-    graph.get(point2)!.push(point1);
-  }
+  const graph = scene.pointToSortedPoints();
 
   _cachedGraphHash = scene.graphHash();
   _cachedCycles = findAllCycles(graph, 12);
@@ -130,7 +119,9 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
     }
   }
 
-  console.log(`checked ${regions.size} regions, found ${minimalCycles.size} minimal cycles`);
+  console.log(
+    `checked ${regions.size} regions, found ${minimalCycles.size} minimal cycles`
+  );
 
   return minimalCycles;
 }

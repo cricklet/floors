@@ -63,9 +63,24 @@ export type RenderHint =
 
 export type PointRenderState = "hovered" | "selected" | "selected-hovered";
 
-function findTarget(scene: Scene, point: paper.Point): Target | undefined {
+function intersectionSet<T>(a: Set<T>, b: Set<T>): Set<T> {
+  const result = new Set<T>();
+  for (const value of a) {
+    if (b.has(value)) {
+      result.add(value);
+    }
+  }
+  return result;
+}
+
+function findTarget(
+  scene: Scene,
+  point: paper.Point,
+  excludePoints: Set<PointId> = new Set(),
+  excludeEdges: Set<EdgeId> = new Set()
+): Target | undefined {
   for (const [pointId, scenePoint] of scene.points()) {
-    if (scenePoint.getDistance(point) < 5) {
+    if (scenePoint.getDistance(point) < 5 && !excludePoints.has(pointId)) {
       return {
         kind: "point",
         pointId,
@@ -78,6 +93,9 @@ function findTarget(scene: Scene, point: paper.Point): Target | undefined {
   const intersections: Map<paper.Point, Set<EdgeId>> = findIntersections(scene);
 
   for (const [intersection, edgesToSplit] of intersections) {
+    if (intersectionSet(edgesToSplit, excludeEdges).size > 0) {
+      continue;
+    }
     if (intersection.getDistance(point) < 5) {
       return {
         kind: "intersection",
@@ -90,11 +108,13 @@ function findTarget(scene: Scene, point: paper.Point): Target | undefined {
   const splitTarget = findSplitTarget(scene, point);
   if (splitTarget) {
     const [splitPoint, edgeToSplit] = splitTarget;
-    return {
-      kind: "split",
-      point: splitPoint,
-      edgeToSplit,
-    };
+    if (!excludeEdges.has(edgeToSplit)) {
+      return {
+        kind: "split",
+        point: splitPoint,
+        edgeToSplit,
+      };
+    }
   }
 
   return undefined;

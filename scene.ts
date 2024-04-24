@@ -114,6 +114,46 @@ export class Scene {
     return this._edges;
   }
 
+  pointToPoints(): Map<PointId, Set<PointId>> {
+    const graph = new Map<PointId, Set<PointId>>();
+    for (const [_, [point1, point2]] of this._edges) {
+      if (!graph.has(point1)) {
+        graph.set(point1, new Set());
+      }
+      if (!graph.has(point2)) {
+        graph.set(point2, new Set());
+      }
+      graph.get(point1)!.add(point2);
+      graph.get(point2)!.add(point1);
+    }
+    return graph;
+  }
+
+  pointToSortedPoints(): Map<PointId, Array<PointId>> {
+    const result = new Map<PointId, Array<PointId>>();
+    const graph = this.pointToPoints();
+    for (const [point, neighbors] of graph) {
+      const sorted = Array.from(neighbors).sort();
+      result.set(point, sorted);
+    }
+    return result;
+  }
+
+  pointToEdges(): Map<PointId, Set<EdgeId>> {
+    const result = new Map<PointId, Set<EdgeId>>();
+    for (const [edgeId, [point1, point2]] of this._edges) {
+      if (!result.has(point1)) {
+        result.set(point1, new Set());
+      }
+      if (!result.has(point2)) {
+        result.set(point2, new Set());
+      }
+      result.get(point1)!.add(edgeId);
+      result.get(point2)!.add(edgeId);
+    }
+    return result;
+  }
+
   encode(): string {
     let result = "";
     result += `points\n`;
