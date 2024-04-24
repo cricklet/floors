@@ -204,6 +204,7 @@ function cutDirectionForEdge(
 
 function makeCut(
   scene: Scene,
+  cycleIds: ReadonlyArray<PointId>,
   cycle: Array<paper.Point>,
   winding: Winding,
   t: number,
@@ -226,7 +227,7 @@ function makeCut(
   const end = raycast(scene, start, cutDirection, startEdgeId);
   if (!end) {
     console.error(
-      `couldn't find intersection for cut ${start} in direction ${cutDirection}`
+      `couldn't find intersection for cut ${start} on ${startEdgeId} in direction ${cutDirection} for cycle ${cycleIds} with winding ${winding}`
     );
     return false;
   }
@@ -387,7 +388,7 @@ export function generateRooms(
     if (t >= 1) {
       t -= 1;
     }
-    makeCut(scene, cycle, winding, t, `${i}`);
+    makeCut(scene, cycleIds, cycle, winding, t, `${i}`);
   }
 
   return findRegions(scene);

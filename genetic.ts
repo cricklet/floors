@@ -30,8 +30,7 @@ export function generateRandomly(
     inputs.push(randomCuts);
   }
 
-  console.log(inputs);
-  // inputs[0] = [0.5 - 0.125, 0.25 - 0.125, 0.75 - 0.125];
+  inputs[0] = [0.5 - 0.125, 0.25, 0.5];
 
   for (let i = 0; i < runs; i++) {
     const newScene = scene.clone();
