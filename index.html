@@ -38,14 +38,6 @@
     overflow: hidden;
   }
 
-  .many {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
-    overflow-y: scroll!important;
-  }
-
   canvas {
     background-color: var(--white);
     border-radius: 8px;
@@ -62,8 +54,20 @@
     border-radius: 8px;
   }
 
+  .many {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow-y: scroll!important;
+  }
+
+  .many>div {
+    position:relative;
+  }
+
   .label {
-    position: absolute;
+    position:absolute;
     padding: 8px;
     font-family: sans-serif;
   }

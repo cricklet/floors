@@ -206,9 +206,9 @@ export class RenderManyScenes {
 
     const gap = 8;
 
-    const gridSize = Math.min(3, Math.ceil(Math.sqrt(scenes.length)));
-    const cellWidth = (width - gap * (gridSize - 1)) / gridSize;
-    const cellHeight = (height - gap * (gridSize - 1)) / gridSize;
+    const gridSize = Math.min(4, Math.ceil(Math.sqrt(scenes.length)));
+    let cellWidth = (width - gap * (gridSize - 1)) / gridSize;
+    let cellHeight = cellWidth;
 
     const defaultZoom = 3;
     const gridZoom = (1.2 * (defaultZoom * cellWidth)) / width;
@@ -240,11 +240,6 @@ export class RenderManyScenes {
 
       renderPoints(scope, scene);
       renderEdges(scope, scene);
-
-      const textLocation = new paper.Point(
-        -gridZoom * cellWidth * 0.35,
-        -gridZoom * cellHeight * 0.35
-      ).add(new paper.Point(10, 10));
     }
   }
 }

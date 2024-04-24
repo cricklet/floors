@@ -388,8 +388,11 @@ export function generateRooms(
   let t = 0;
   for (const [i, dt] of enumerateIndexAndItem(cutOffsets)) {
     t += dt;
-    if (t >= 1) {
+    while (t >= 1) {
       t -= 1;
+    }
+    while (t < 0) {
+      t += 1;
     }
     makeCut(scene, cycleIds, cycle, winding, t, `${i}`);
   }
@@ -400,6 +403,7 @@ export function generateRooms(
 export type PartitionResult = {
   scene: Scene;
   regions: Map<RegionId, Array<PointId>>;
+  score: number;
 };
 
 export function generateRandomCuts(
@@ -418,8 +422,6 @@ export function generateRandomCuts(
     result.push(offsets);
   }
 
-  result[0] = [0.625, 0.25, 0.5];
-
   return result;
 }
 
@@ -430,16 +432,13 @@ export function createRoomPartitioner(
 ): Runner<PartitionResult> {
   return (parameters: Array<number>) => {
     const scene = source.clone();
-  
+
     const regions = generateRooms(scene, cycleIds, roomWeights, parameters);
     const score = scoreRooms(scene, regions, roomWeights);
     return {
       score,
-      result: {
-        scene: scene.clone(),
-        regions: regions,
-      },
-      parameters,
+      scene: scene.clone(),
+      regions: regions,
     };
   };
 }

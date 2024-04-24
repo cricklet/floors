@@ -1,6 +1,10 @@
 import seedrandom from "seedrandom";
 
-export type Runner<T> = (parameters: Array<number>) => EvolveResult<T>;
+type HasScore = {
+  score: number;
+};
+
+export type Runner<T extends HasScore> = (parameters: Array<number>) => T;
 
 export type Initializer = (seed: number) => Array<number>;
 
@@ -13,8 +17,8 @@ export type GeneticParameters = {
 export type EvolveResult<T> = {
   parameters: Array<number>;
   score: number;
-  result: T;
-};
+  generation: number;
+} & T;
 
 // export function pickBest<T>(
 //   runner: Runner<T>,
@@ -43,7 +47,7 @@ export type EvolveResult<T> = {
 //   return results[0];
 // }
 
-export function evolve<T>(
+export function evolve<T extends HasScore>(
   runner: Runner<T>,
   population: Array<Array<number>>,
   parameters: GeneticParameters
@@ -56,8 +60,11 @@ export function evolve<T>(
 
   for (let i = 0; i < numGenerations; i++) {
     const results: Array<EvolveResult<T>> = population.map((parameters, i) => {
-      console.log(`Running ${i}...`);
-      return runner(parameters);
+      return {
+        ...runner(parameters),
+        parameters: parameters,
+        generation: i,
+      };
     });
 
     // Highest score first
@@ -67,7 +74,6 @@ export function evolve<T>(
       allResults.push(result);
     }
 
-    console.log(populationSize, survivalRate * populationSize);
     const survivors = results.slice(
       0,
       Math.ceil(survivalRate * populationSize)
@@ -88,7 +94,7 @@ export function evolve<T>(
     }
   }
 
-  console.log(allResults);
+  allResults.sort((a, b) => b.score - a.score);
 
   return allResults;
 }

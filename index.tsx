@@ -55,15 +55,15 @@ if (queryString === '?rooms') {
     const roomWeights = roomsDefintion.roomWeights();
 
     const runner = createRoomPartitioner(flattened, cycle, roomWeights);
-    const startingPopulation = generateRandomCuts(4, roomsDefintion.numRooms(), 'asdf');
+    const startingPopulation = generateRandomCuts(10, roomsDefintion.numRooms(), 'asdf');
     allResults = evolve<PartitionResult>(runner, startingPopulation, {
-      numGenerations: 1,
-      mutationRate: 0.1,
+      numGenerations: 10,
+      mutationRate: 0.5,
       survivalRate: 0.2,
     });
 
-    bestScene = allResults[0].result.scene;
-    bestRegions = allResults[0].result.regions;
+    bestScene = allResults[0].scene;
+    bestRegions = allResults[0].regions;
   }
 
   let _generation = -1;
@@ -72,15 +72,15 @@ if (queryString === '?rooms') {
       _generation = scene.generation();
       update();
       manyRenderer.render(
-        allResults.map((result) => result.result.scene),
-        allResults.map((result) => result.score.toFixed(2))
+        allResults.map((result) => result.scene),
+        allResults.map((result) => `${result.score.toFixed(2)} (${result.generation})`)
       );
     }
 
     clearRendering(paper1);
     renderRegions(paper1, bestRegions, bestScene);
     renderEdges(paper1, bestScene);
-    renderPoints(paper1, bestScene);
+    renderPoints(paper1, scene);
     renderHandles(paper1, editBehavior1.renderHints());
   }
 
