@@ -309,28 +309,28 @@ export function singlePolygon(): Scene {
   // b c
   // */
 
-  // const a = scene.addPoint(new paper.Point(0, -50), "a");
-  // const b = scene.addPoint(new paper.Point(-50, 50), "b");
-  // const c = scene.addPoint(new paper.Point(50, 50), "c");
+  const a = scene.addPoint(new paper.Point(0, -50), "a");
+  const b = scene.addPoint(new paper.Point(-50, 50), "b");
+  const c = scene.addPoint(new paper.Point(50, 50), "c");
 
-  // scene.addEdge(a, b);
-  // scene.addEdge(b, c);
-  // scene.addEdge(a, c);
+  scene.addEdge(a, b);
+  scene.addEdge(b, c);
+  scene.addEdge(a, c);
 
   /*
    a b
    d c
   */
 
-  const a = scene.addPoint(new paper.Point(-50, -50), "a");
-  const b = scene.addPoint(new paper.Point(50, -50), "b");
-  const c = scene.addPoint(new paper.Point(50, 50), "c");
-  const d = scene.addPoint(new paper.Point(-50, 50), "d");
+  // const a = scene.addPoint(new paper.Point(-50, -50), "a");
+  // const b = scene.addPoint(new paper.Point(50, -50), "b");
+  // const c = scene.addPoint(new paper.Point(50, 50), "c");
+  // const d = scene.addPoint(new paper.Point(-50, 50), "d");
   
-  scene.addEdge(a, b);
-  scene.addEdge(b, c);
-  scene.addEdge(c, d);
-  scene.addEdge(d, a);
+  // scene.addEdge(a, b);
+  // scene.addEdge(b, c);
+  // scene.addEdge(c, d);
+  // scene.addEdge(d, a);
 
   return scene;
 }

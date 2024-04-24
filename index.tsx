@@ -7,8 +7,8 @@ import { RenderManyScenes, clearRendering, renderEdges, renderHandles, renderPoi
 import { EditBehavior } from "./interactions";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea } from "./dom";
 import { setup } from "paper/dist/paper-core";
-import { defaultRoomsDefinition, generateRooms, scoreRooms } from "./rooms";
-import { Result, generateRandomly } from "./genetic";
+import { PartitionResult, createRoomPartitioner, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms } from "./rooms";
+import { EvolveResult, evolve } from "./genetic";
 
 const queryString = window.location.search;
 if (queryString === '?rooms') {
@@ -43,7 +43,7 @@ if (queryString === '?rooms') {
   let bestScene = new Scene();
   let bestRegions = new Map<string, Array<string>>();
 
-  let allResults: Array<Result> = [];
+  let allResults: Array<EvolveResult<PartitionResult>> = [];
 
   const manyRenderer = new RenderManyScenes(manyEl);
 
@@ -52,18 +52,18 @@ if (queryString === '?rooms') {
     regions = findRegions(flattened);
 
     const cycle = sortedRegions(regions)[0];
-
     const roomWeights = roomsDefintion.roomWeights();
-    allResults = generateRandomly(10, flattened, cycle, roomWeights);
 
-    bestScene = allResults[0].scene;
-    bestRegions = allResults[0].regions;
+    const runner = createRoomPartitioner(flattened, cycle, roomWeights);
+    const startingPopulation = generateRandomCuts(4, roomsDefintion.numRooms(), 'asdf');
+    allResults = evolve<PartitionResult>(runner, startingPopulation, {
+      numGenerations: 1,
+      mutationRate: 0.1,
+      survivalRate: 0.2,
+    });
 
-    // const cuts = randomCutOffsets(roomsDefintion.numRooms(), 'zxcv');
-    // console.log(cuts);
-    // roomRegions = generateRooms(roomScene, cycle, roomsDefintion.rooms(), cuts);
-
-    // console.log(scoreRooms(roomScene, roomRegions, roomsDefintion.rooms()));
+    bestScene = allResults[0].result.scene;
+    bestRegions = allResults[0].result.regions;
   }
 
   let _generation = -1;
@@ -72,7 +72,7 @@ if (queryString === '?rooms') {
       _generation = scene.generation();
       update();
       manyRenderer.render(
-        allResults.map((result) => result.scene),
+        allResults.map((result) => result.result.scene),
         allResults.map((result) => result.score.toFixed(2))
       );
     }

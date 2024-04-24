@@ -8,6 +8,7 @@ import {
 } from "./flatten";
 import { RegionId, enumerateIndexAndItem, findRegions } from "./regions";
 import { EdgeId, PointId, Scene } from "./scene";
+import { Runner } from "./genetic";
 
 export class RoomsDefinition {
   private _rooms: Array<number>;
@@ -394,4 +395,51 @@ export function generateRooms(
   }
 
   return findRegions(scene);
+}
+
+export type PartitionResult = {
+  scene: Scene;
+  regions: Map<RegionId, Array<PointId>>;
+};
+
+export function generateRandomCuts(
+  populationSize: number,
+  numRooms: number,
+  seed: string
+): Array<Array<number>> {
+  const random = seedrandom(`${seed}`);
+
+  const result = [];
+  for (let i = 0; i < populationSize; i++) {
+    const offsets = [];
+    for (let i = 1; i < numRooms; i++) {
+      offsets.push(random());
+    }
+    result.push(offsets);
+  }
+
+  result[0] = [0.625, 0.25, 0.5];
+
+  return result;
+}
+
+export function createRoomPartitioner(
+  source: Readonly<Scene>,
+  cycleIds: Array<PointId>,
+  roomWeights: ReadonlyArray<number>
+): Runner<PartitionResult> {
+  return (parameters: Array<number>) => {
+    const scene = source.clone();
+  
+    const regions = generateRooms(scene, cycleIds, roomWeights, parameters);
+    const score = scoreRooms(scene, regions, roomWeights);
+    return {
+      score,
+      result: {
+        scene: scene.clone(),
+        regions: regions,
+      },
+      parameters,
+    };
+  };
 }

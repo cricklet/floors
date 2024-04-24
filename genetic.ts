@@ -1,48 +1,94 @@
 import seedrandom from "seedrandom";
-import { generateRooms, scoreRooms } from "./rooms";
-import { PointId, Scene } from "./scene";
-import { RegionId } from "./regions";
 
-export type Result = {
-  score: number;
-  scene: Scene;
-  regions: Map<RegionId, Array<PointId>>;
+export type Runner<T> = (parameters: Array<number>) => EvolveResult<T>;
+
+export type Initializer = (seed: number) => Array<number>;
+
+export type GeneticParameters = {
+  numGenerations: number;
+  mutationRate: number;
+  survivalRate: number;
 };
 
-export function generateRandomly(
-  runs: number,
-  scene: Readonly<Scene>,
-  cycleIds: ReadonlyArray<PointId>,
-  roomWeights: ReadonlyArray<number>
-): Array<Result> {
+export type EvolveResult<T> = {
+  parameters: Array<number>;
+  score: number;
+  result: T;
+};
+
+// export function pickBest<T>(
+//   runner: Runner<T>,
+//   initializer: Initializer,
+//   parameters: GeneticParameters
+// ): Result<T> {
+//   const random = seedrandom("seed");
+//   const { populationSize, numGenerations, mutationRate, survivalRate } =
+//     parameters;
+
+//   let population: Array<Array<number>> = [];
+//   for (let i = 0; i < populationSize; i++) {
+//     population.push(initializer(i));
+//   }
+
+//   const results: Array<Result<T>> = population.map((parameters) => {
+//     return runner(parameters);
+//   });
+
+//   // Highest score first
+//   results.sort((a, b) => b.score - a.score);
+//   for (const result of results) {
+//     console.log(result.score);
+//   }
+
+//   return results[0];
+// }
+
+export function evolve<T>(
+  runner: Runner<T>,
+  population: Array<Array<number>>,
+  parameters: GeneticParameters
+): Array<EvolveResult<T>> {
   const random = seedrandom("seed");
-  const results: Array<Result> = [];
+  const { numGenerations, mutationRate, survivalRate } = parameters;
+  let populationSize = population.length;
 
-  const inputs: Array<Array<number>> = [];
-  for (let i = 0; i < runs; i++) {
-    // Start in a random spot
-    const randomCuts = [random()];
+  let allResults = [];
 
-    // Then incrementally cut from there
-    for (let j = 2; j < roomWeights.length; j++) {
-      randomCuts.push(random() * 0.5);
-    }
-    inputs.push(randomCuts);
-  }
-
-  inputs[0] = [0.5 - 0.125, 0.25, 0.5];
-
-  for (let i = 0; i < runs; i++) {
-    const newScene = scene.clone();
-    const regions = generateRooms(newScene, cycleIds, roomWeights, inputs[i]);
-    results.push({
-      score: scoreRooms(newScene, regions, roomWeights),
-      scene: newScene,
-      regions: regions,
+  for (let i = 0; i < numGenerations; i++) {
+    const results: Array<EvolveResult<T>> = population.map((parameters, i) => {
+      console.log(`Running ${i}...`);
+      return runner(parameters);
     });
+
+    // Highest score first
+    results.sort((a, b) => b.score - a.score);
+
+    for (const result of results) {
+      allResults.push(result);
+    }
+
+    console.log(populationSize, survivalRate * populationSize);
+    const survivors = results.slice(
+      0,
+      Math.ceil(survivalRate * populationSize)
+    );
+
+    population = [];
+    for (let i = 0; i < populationSize; i++) {
+      const survivorIndex =
+        i < survivors.length ? i : Math.floor(random() * survivors.length);
+
+      const { parameters } = survivors[survivorIndex];
+
+      const newParameters = parameters.map((parameter) => {
+        const delta = (random() - 0.5) * mutationRate;
+        return parameter + delta;
+      });
+      population.push(newParameters);
+    }
   }
 
-  results.sort((a, b) => b.score - a.score);
+  console.log(allResults);
 
-  return results;
+  return allResults;
 }
