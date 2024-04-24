@@ -192,15 +192,13 @@ export class RenderManyScenes {
       paperScope.remove();
     }
 
-    for (const canvasEl of this._canvasEls) {
-      this._containerEl.removeChild(canvasEl);
-    }
+    this._containerEl.innerHTML = "";
 
     this._scopes = [];
     this._canvasEls = [];
   }
 
-  render(scenes: Array<Scene>) {
+  render(scenes: Array<Scene>, labels: Array<string>) {
     this._clear();
 
     const width = this._containerEl.clientWidth;
@@ -213,25 +211,40 @@ export class RenderManyScenes {
     const cellHeight = (height - gap * (gridSize - 1)) / gridSize;
 
     const defaultZoom = 3;
-    const gridZoom = defaultZoom * cellWidth / width;
+    const gridZoom = (1.2 * (defaultZoom * cellWidth)) / width;
 
-    for (const scene of scenes) {
+    for (const [i, scene] of enumerateIndexAndItem(scenes)) {
+      const divEl = document.createElement("div");
+      divEl.style.width = `${cellWidth}px`;
+      divEl.style.height = `${cellHeight}px`;
+      this._containerEl.appendChild(divEl);
+
+      const labelEl = document.createElement("div");
+      labelEl.className = "label"
+      labelEl.textContent = labels[i];
+      divEl.appendChild(labelEl);
+
       const canvasEl = document.createElement("canvas");
       canvasEl.width = cellWidth;
       canvasEl.height = cellHeight;
-      this._containerEl.appendChild(canvasEl);
+      divEl.appendChild(canvasEl);
 
       const scope = new paper.PaperScope();
       scope.setup(canvasEl);
       scope.view.viewSize = new paper.Size(cellWidth, cellHeight);
       scope.view.center = new paper.Point(0, 0);
-      scope.view.zoom = gridZoom * 1.2;
+      scope.view.zoom = gridZoom;
 
       this._scopes.push(scope);
       this._canvasEls.push(canvasEl);
 
       renderPoints(scope, scene);
       renderEdges(scope, scene);
+
+      const textLocation = new paper.Point(
+        -gridZoom * cellWidth * 0.35,
+        -gridZoom * cellHeight * 0.35
+      ).add(new paper.Point(10, 10));
     }
   }
 }

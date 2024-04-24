@@ -71,7 +71,10 @@ if (queryString === '?rooms') {
     if (_generation !== scene.generation()) {
       _generation = scene.generation();
       update();
-      manyRenderer.render(allResults.map((result) => result.scene));
+      manyRenderer.render(
+        allResults.map((result) => result.scene),
+        allResults.map((result) => result.score.toFixed(2))
+      );
     }
 
     clearRendering(paper1);
