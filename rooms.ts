@@ -1,7 +1,7 @@
 import paper from "paper";
-import { findSplitTarget } from "./flatten";
+import { findSplitTarget, splitEdge } from "./flatten";
 import { findRegions } from "./regions";
-import { PointId, Scene } from "./scene";
+import { EdgeId, PointId, Scene } from "./scene";
 
 export class RoomsDefinition {
   private _rooms: Array<number>;
@@ -95,22 +95,81 @@ function windingOfCycle(cycle: Array<paper.Point>): Winding {
   return sum > 0 ? "counterclockwise" : "clockwise";
 }
 
+// https://gamedev.stackexchange.com/questions/109420/ray-segment-intersection
+function rayIntersection(
+  x: number,
+  y: number,
+  dx: number,
+  dy: number,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+): { x: number; y: number } | undefined {
+  var r, s, d;
+  //Make sure the lines aren't parallel, can use an epsilon here instead
+  // Division by zero in C# at run-time is infinity. In JS it's NaN
+  if (dy / dx != (y2 - y1) / (x2 - x1)) {
+    d = dx * (y2 - y1) - dy * (x2 - x1);
+    if (d != 0) {
+      r = ((y - y1) * (x2 - x1) - (x - x1) * (y2 - y1)) / d;
+      s = ((y - y1) * dx - (x - x1) * dy) / d;
+      if (r >= 0 && s >= 0 && s <= 1) {
+        return { x: x + r * dx, y: y + r * dy };
+      }
+    }
+  }
+  return undefined;
+}
 
-
-function makeCut(
+function raycast(
   scene: Scene,
-  cycle: Array<paper.Point>,
-  winding: Winding,
-  t: number
-): boolean {
-  const cut = pointAlongCycle(cycle, t);
-  const split = findSplitTarget(scene, cut, 0.1);
-  if (!split) {
-    console.error(`couldn't find edge to split at ${cut} in cycle ${cycle}`);
-    return false;
+  origin: paper.Point,
+  direction: paper.Point,
+  ignoreEdge: EdgeId
+): [paper.Point, EdgeId] | undefined {
+  let closest: [paper.Point, EdgeId] | undefined = undefined;
+  let closestDistance = Infinity;
+
+  for (const [edgeId, [pointId1, pointId2]] of scene.edges()) {
+    if (edgeId === ignoreEdge) {
+      continue;
+    }
+
+    const [point1, point2] = [
+      scene.getPoint(pointId1),
+      scene.getPoint(pointId2),
+    ];
+
+    const intersection = rayIntersection(
+      origin.x,
+      origin.y,
+      direction.x,
+      direction.y,
+      point1.x,
+      point1.y,
+      point2.x,
+      point2.y
+    );
+
+    if (intersection) {
+      const intersectionPoint = new paper.Point(intersection.x, intersection.y);
+      const distance = origin.getDistance(intersectionPoint);
+      if (distance < closestDistance) {
+        closest = [intersectionPoint, edgeId];
+        closestDistance = distance;
+      }
+    }
   }
 
-  const [_, edgeId] = split;
+  return closest;
+}
+
+function cutDirectionForEdge(
+  scene: Scene,
+  edgeId: EdgeId,
+  winding: Winding
+): paper.Point | undefined {
   const [edgePointId1, edgePointId2] = scene.getEdge(edgeId);
   const [edgePoint1, edgePoint2] = [
     scene.getPoint(edgePointId1),
@@ -121,7 +180,7 @@ function makeCut(
     console.error(
       `edge ${edgeId} is too short to split ${edgePoint1}, ${edgePoint2}`
     );
-    return false;
+    return undefined;
   }
 
   const edgeDirection = edgePoint2.subtract(edgePoint1).normalize();
@@ -130,8 +189,48 @@ function makeCut(
       ? edgeDirection.rotate(90, new paper.Point(0, 0))
       : edgeDirection.rotate(-90, new paper.Point(0, 0));
 
-  console.log(cut, cutDirection);
+  return cutDirection;
+}
 
+function makeCut(
+  scene: Scene,
+  cycle: Array<paper.Point>,
+  winding: Winding,
+  t: number
+): boolean {
+  const start = pointAlongCycle(cycle, t);
+  const startSplit = findSplitTarget(scene, start, 0.1);
+  if (!startSplit) {
+    console.error(`couldn't find edge to split at ${start} in cycle ${cycle}`);
+    return false;
+  }
+
+  const [_, startEdgeId] = startSplit;
+  const cutDirection = cutDirectionForEdge(scene, startEdgeId, winding);
+  if (!cutDirection) {
+    console.error(`couldn't find cut direction for edge ${startEdgeId}`);
+    return false;
+  }
+
+  const end = raycast(scene, start, cutDirection, startEdgeId);
+  if (!end) {
+    console.error(
+      `couldn't find intersection for cut ${start} in direction ${cutDirection}`
+    );
+    return false;
+  }
+
+  const [endPoint, endEdgeId] = end;
+
+  const startPointId = scene.addPoint(start);
+  splitEdge(scene, startEdgeId, startPointId);
+
+  const endPointId = scene.addPoint(endPoint);
+  splitEdge(scene, endEdgeId, endPointId);
+
+  scene.addEdge(startPointId, endPointId);
+
+  console.log(`cut edges ${startEdgeId} and ${endEdgeId} at ${start} and ${endPoint}`);
   return true;
 }
 
@@ -145,9 +244,19 @@ export function generateRooms(
   const winding = windingOfCycle(cycle);
   console.log(cycleIds, cycle, winding);
 
+  {
+    const regions = findRegions(scene);
+    console.log(regions.size);
+  }
+
   makeCut(scene, cycle, winding, 0.2);
 
   const result: Array<Array<paper.Point>> = [];
+  {
+    const regions = findRegions(scene);
+    console.log(regions.size);
+    console.log(regions);
+  }
 
   // let regions;
   // while (true) {
