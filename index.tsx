@@ -53,10 +53,14 @@ const g = scene.addPoint(new paper.Point(-50, 50), 'g');
 const h = scene.addPoint(new paper.Point(0, 50), 'h');
 const i = scene.addPoint(new paper.Point(50, 50), 'i');
 
-scene.addEdge(a, c);
-scene.addEdge(c, i);
-scene.addEdge(i, g);
-scene.addEdge(g, a);
+scene.addEdge(a, b);
+scene.addEdge(b, c);
+scene.addEdge(c, f);
+scene.addEdge(f, i);
+scene.addEdge(i, h);
+scene.addEdge(h, g);
+scene.addEdge(g, d);
+scene.addEdge(d, a);
 scene.addEdge(b, h);
 scene.addEdge(d, f);
 
@@ -85,16 +89,18 @@ function update() {
   clearRendering(paper1);
   renderEdges(paper1, scene);
   renderPoints(paper1, scene);
-  renderHandles(paper1, editBehavior.renderHints());
+  renderHandles(paper1, editBehavior1.renderHints());
 
   clearRendering(paper2);
   renderRegions(paper2, regions, flattened);
   renderEdges(paper2, flattened);
   renderPoints(paper2, flattened);
+  renderHandles(paper2, editBehavior2.renderHints());
 }
 
 setInterval(() => {
   update();
 }, 1000 / 60);
 
-const editBehavior = new EditBehavior(paper1, scene);
+const editBehavior1 = new EditBehavior(paper1, scene);
+const editBehavior2 = new EditBehavior(paper2, scene);

@@ -32,7 +32,7 @@ function findCyclesInEdges(scene: Readonly<Scene>): Array<Array<PointId>> {
   }
 
   _cachedGraphHash = scene.graphHash();
-  _cachedCycles = findAllCycles(graph, 10);
+  _cachedCycles = findAllCycles(graph, 12);
 
   return _cachedCycles;
 }

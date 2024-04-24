@@ -105,10 +105,12 @@ export function renderPoints(scope: paper.PaperScope, scene: Scene) {
     circle.strokeWidth = 1;
     scope.project.activeLayer.addChild(circle);
 
-    const text = new paper.PointText(point.add(new paper.Point(3, -3)));
-    text.fontSize = 6;
-    text.content = `${pointId}`;
-    scope.project.activeLayer.addChild(text);
+    if (pointId.length < 6) {
+      const text = new paper.PointText(point.add(new paper.Point(3, -3)));
+      text.fontSize = 6;
+      text.content = `${pointId}`;
+      scope.project.activeLayer.addChild(text);
+    }
   }
 }
 
@@ -123,7 +125,7 @@ export function renderEdges(scope: paper.PaperScope, scene: Scene) {
     line.strokeCap = "round";
     scope.project.activeLayer.addChild(line);
 
-    {
+    if (edge.length < 10) {
       const [a, b] = orderPoints(point1, point2);
       const vector = b.subtract(a);
       const center = a.add(vector.multiply(0.6));
@@ -159,13 +161,14 @@ export function renderRegions(
     }
     regionPath.closed = true;
     regionPath.fillColor = new paper.Color(faceColorForRegion(regionId));
-
-    const text = new paper.PointText(regionPath.interiorPoint);
-    text.fontSize = 4;
-    text.content = `${regionId}`;
-    text.justification = "center";
-
     scope.project.activeLayer.addChild(regionPath);
-    scope.project.activeLayer.addChild(text);
+
+    if (regionId.length < 20) {
+      const text = new paper.PointText(regionPath.interiorPoint);
+      text.fontSize = 4;
+      text.content = `${regionId}`;
+      text.justification = "center";
+      scope.project.activeLayer.addChild(text);
+    }
   }
 }
