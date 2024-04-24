@@ -227,8 +227,6 @@ export class Scene {
   }
 
   decode(data: string) {
-    this._watcher.notify();
-
     this._edges.clear();
     this._points.clear();
 
@@ -259,6 +257,8 @@ export class Scene {
         this._edges.set(id, [p1, p2]);
       }
     }
+
+    this._watcher.notify();
   }
 }
 

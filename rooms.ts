@@ -222,10 +222,10 @@ function makeCut(
 
   const [endPoint, endEdgeId] = end;
 
-  const startPointId = scene.addPoint(start);
+  const startPointId = scene.addPoint(start, `${startEdgeId}-${t}`);
   splitEdge(scene, startEdgeId, startPointId);
 
-  const endPointId = scene.addPoint(endPoint);
+  const endPointId = scene.addPoint(endPoint, `${endEdgeId}-${t}`);
   splitEdge(scene, endEdgeId, endPointId);
 
   scene.addEdge(startPointId, endPointId);
@@ -250,6 +250,7 @@ export function generateRooms(
   }
 
   makeCut(scene, cycle, winding, 0.2);
+  makeCut(scene, cycle, winding, 0.5);
 
   const result: Array<Array<paper.Point>> = [];
   {

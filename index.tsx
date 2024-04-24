@@ -20,12 +20,15 @@ if (queryString === '?rooms') {
   const div1El = document.createElement("div");
   containerEl.appendChild(div1El);
 
+  const div2El = document.createElement("div");
+  containerEl.appendChild(div2El);
+
   const roomsTextArea = document.createElement("textarea");
   roomsTextArea.style.flex = "0.2";
   containerEl.appendChild(roomsTextArea);
 
-  const [paper1, finish1] = setupPaper(div1El);
-  finish1();
+  const paper1 = setupPaper(div1El);
+  const paper2 = setupPaper(div2El);
 
   const roomsDefintion = defaultRoomsDefinition();
   const scene = singlePolygon();
@@ -37,12 +40,14 @@ if (queryString === '?rooms') {
   let regions = new Map<string, Array<string>>();
   let rooms: Array<Array<paper.Point>> = [];
 
+  let roomScene = new Scene();
+
   function update() {
     flattened = flattenScene(scene);
     regions = findRegions(flattened);
 
     const cycle = sortedRegions(regions)[0];
-    const roomScene = flattened.subset(cycle);
+    roomScene = flattened.subset(cycle);
     rooms = generateRooms(roomScene, cycle, roomsDefintion.rooms());
   }
 
@@ -52,6 +57,11 @@ if (queryString === '?rooms') {
     renderEdges(paper1, flattened);
     renderPoints(paper1, flattened);
     renderHandles(paper1, editBehavior1.renderHints());
+
+    clearRendering(paper2);
+    renderRegions(paper2, regions, roomScene);
+    renderEdges(paper2, roomScene);
+    renderPoints(paper2, roomScene);
   }
 
   setInterval(() => {
@@ -82,10 +92,8 @@ else {
   const div2El = document.createElement("div");
   containerEl.appendChild(div2El);
 
-  const [paper1, finish1] = setupPaper(div1El);
-  const [paper2, finish2] = setupPaper(div2El);
-  finish1();
-  finish2();
+  const paper1 = setupPaper(div1El);
+  const paper2 = setupPaper(div2El);
 
   const scene = defaultScene();
   setupEncodedTextArea(encodedTextArea, scene);

@@ -4,7 +4,7 @@ import { RoomsDefinition } from "./rooms";
 
 export function setupPaper(
   divEl: HTMLDivElement
-): [paper.PaperScope, () => void] {
+): paper.PaperScope {
   const canvasEl = document.createElement("canvas");
   divEl.appendChild(canvasEl);
 
@@ -26,8 +26,9 @@ export function setupPaper(
   window.addEventListener("resize", () => {
     updateSize();
   });
+  updateSize();
 
-  return [paperScope, updateSize];
+  return paperScope;
 }
 
 export function setupEncodedTextArea(
