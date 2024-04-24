@@ -3,7 +3,7 @@ import { generateRooms, scoreRooms } from "./rooms";
 import { PointId, Scene } from "./scene";
 import { RegionId } from "./regions";
 
-type Result = {
+export type Result = {
   score: number;
   scene: Scene;
   regions: Map<RegionId, Array<PointId>>;
@@ -20,13 +20,18 @@ export function generateRandomly(
 
   const inputs: Array<Array<number>> = [];
   for (let i = 0; i < runs; i++) {
-    const randomCuts = [];
-    for (let j = 1; j < roomWeights.length; j++) {
-      randomCuts.push(random());
+    // Start in a random spot
+    const randomCuts = [random()];
+
+    // Then incrementally cut from there
+    for (let j = 2; j < roomWeights.length; j++) {
+      randomCuts.push(random() * 0.5);
     }
     inputs.push(randomCuts);
   }
-  inputs[0] = [0.5 - 0.125, 0.25 - 0.125, 0.75 - 0.125];
+
+  console.log(inputs);
+  // inputs[0] = [0.5 - 0.125, 0.25 - 0.125, 0.75 - 0.125];
 
   for (let i = 0; i < runs; i++) {
     const newScene = scene.clone();
@@ -36,10 +41,9 @@ export function generateRandomly(
       scene: newScene,
       regions: regions,
     });
-    break;
   }
 
-  // results.sort((a, b) => b.score - a.score);
+  results.sort((a, b) => b.score - a.score);
 
   return results;
 }

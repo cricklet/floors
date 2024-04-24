@@ -1,6 +1,6 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
-import { RegionId } from "./regions";
+import { RegionId, enumerateIndexAndItem } from "./regions";
 import { PointRenderState, RenderHint } from "./interactions";
 
 const EDGE_COLORS = [
@@ -154,7 +154,7 @@ export function renderRegions(
   regions: Map<RegionId, Array<PointId>>,
   scene: Scene
 ) {
-  for (const [regionId, cycle] of regions) {
+  for (const [i, [regionId, cycle]] of enumerateIndexAndItem(regions)) {
     const regionPath = new paper.Path();
     for (const pointId of cycle) {
       regionPath.add(scene.getPoint(pointId));
@@ -163,12 +163,75 @@ export function renderRegions(
     regionPath.fillColor = new paper.Color(faceColorForRegion(regionId));
     scope.project.activeLayer.addChild(regionPath);
 
-    if (regionId.length < 20) {
-      const text = new paper.PointText(regionPath.interiorPoint);
-      text.fontSize = 4;
-      text.content = `${regionId}`;
-      text.justification = "center";
-      scope.project.activeLayer.addChild(text);
+    const label = regionId.length < 15 ? `${i}:${regionId}` : `${i}`;
+    const text = new paper.PointText(regionPath.interiorPoint);
+    text.fontSize = 4;
+    text.content = label;
+    text.justification = "center";
+    scope.project.activeLayer.addChild(text);
+  }
+}
+
+export class RenderManyScenes {
+  private _containerEl: HTMLDivElement;
+
+  private _scopes: Array<paper.PaperScope>;
+  private _canvasEls: Array<HTMLCanvasElement>;
+
+  constructor(containerEl: HTMLDivElement) {
+    this._containerEl = containerEl;
+    this._scopes = [];
+    this._canvasEls = [];
+  }
+
+  _clear() {
+    for (const paperScope of this._scopes) {
+      paperScope.project.clear();
+
+      // @ts-ignore -- this function exists, and is necessary to avoid memory leaks
+      paperScope.remove();
+    }
+
+    for (const canvasEl of this._canvasEls) {
+      this._containerEl.removeChild(canvasEl);
+    }
+
+    this._scopes = [];
+    this._canvasEls = [];
+  }
+
+  render(scenes: Array<Scene>) {
+    this._clear();
+
+    const width = this._containerEl.clientWidth;
+    const height = this._containerEl.clientHeight;
+
+    const gap = 8;
+
+    const gridSize = Math.min(3, Math.ceil(Math.sqrt(scenes.length)));
+    const cellWidth = (width - gap * (gridSize - 1)) / gridSize;
+    const cellHeight = (height - gap * (gridSize - 1)) / gridSize;
+
+    const defaultZoom = 3;
+    const gridZoom = defaultZoom * cellWidth / width;
+
+    for (const scene of scenes) {
+      const canvasEl = document.createElement("canvas");
+      canvasEl.width = cellWidth;
+      canvasEl.height = cellHeight;
+      this._containerEl.appendChild(canvasEl);
+
+      const scope = new paper.PaperScope();
+      scope.setup(canvasEl);
+      scope.view.viewSize = new paper.Size(cellWidth, cellHeight);
+      scope.view.center = new paper.Point(0, 0);
+      scope.view.zoom = gridZoom * 1.2;
+
+      this._scopes.push(scope);
+      this._canvasEls.push(canvasEl);
+
+      renderPoints(scope, scene);
+      renderEdges(scope, scene);
     }
   }
 }

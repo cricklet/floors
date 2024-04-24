@@ -1,9 +1,13 @@
 import paper from "paper";
 import seedrandom from "seedrandom";
-import { findSplitTarget, splitEdge } from "./flatten";
+import {
+  findSplitTarget,
+  createFlattenedScene,
+  splitEdge,
+  flattenScene,
+} from "./flatten";
 import { RegionId, enumerateIndexAndItem, findRegions } from "./regions";
 import { EdgeId, PointId, Scene } from "./scene";
-import { Runner } from "./genetic";
 
 export class RoomsDefinition {
   private _rooms: Array<number>;
@@ -330,7 +334,9 @@ export function scoreRooms(
       normalizedRoomWeights
     )) {
       const roomScore = 1 - Math.abs(area - weight) / Math.max(area, weight);
-      console.log(`room area score: ${roomScore} for area ${area} and weight ${weight}`);
+      // console.log(
+      //   `room area score: ${roomScore} for area ${area} and weight ${weight}`
+      // );
       areaScores.push(roomScore);
     }
   }
@@ -349,12 +355,16 @@ export function scoreRooms(
   }
 
   // Correct number of rooms
-  let numRoomsScore =
+  let numRoomsScore = Math.pow(
     1 -
-    Math.abs(expectedNumRooms - actualNumRooms) /
-      Math.max(expectedNumRooms, actualNumRooms);
+      Math.abs(expectedNumRooms - actualNumRooms) /
+        Math.max(expectedNumRooms, actualNumRooms),
+    4
+  );
 
-  const overall = mult(areaScores) * mult(roundnessScores) * numRoomsScore;
+  // console.log(`correct num rooms score: ${numRoomsScore}`);
+
+  const overall = sum(areaScores) * sum(roundnessScores) * numRoomsScore;
   return overall;
 }
 
@@ -371,14 +381,14 @@ export function generateRooms(
   const cycle = cycleIds.map((pointId) => scene.getPoint(pointId));
   const winding = windingOfCycle(cycle);
 
-  let regions = new Map();
-  for (const [i, t] of enumerateIndexAndItem(cutOffsets)) {
-    regions = findRegions(scene);
-    if (regions.size === roomWeights.length) {
-      break;
+  let t = 0;
+  for (const [i, dt] of enumerateIndexAndItem(cutOffsets)) {
+    t += dt;
+    if (t >= 1) {
+      t -= 1;
     }
     makeCut(scene, cycle, winding, t, `${i}`);
   }
 
-  return regions;
+  return findRegions(scene);
 }

@@ -1,14 +1,14 @@
 
 import paper from "paper";
 import { EdgeId, PointId, Scene, defaultScene, singlePolygon } from "./scene";
-import { flattenScene } from "./flatten";
+import { createFlattenedScene } from "./flatten";
 import { findRegions, sortedRegions } from "./regions";
-import { clearRendering, renderEdges, renderHandles, renderPoints, renderRegions } from "./render";
+import { RenderManyScenes, clearRendering, renderEdges, renderHandles, renderPoints, renderRegions } from "./render";
 import { EditBehavior } from "./interactions";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea } from "./dom";
 import { setup } from "paper/dist/paper-core";
 import { defaultRoomsDefinition, generateRooms, scoreRooms } from "./rooms";
-import { generateRandomly } from "./genetic";
+import { Result, generateRandomly } from "./genetic";
 
 const queryString = window.location.search;
 if (queryString === '?rooms') {
@@ -40,21 +40,24 @@ if (queryString === '?rooms') {
   let flattened = new Scene();
   let regions = new Map<string, Array<string>>();
 
-  let roomScene = new Scene();
-  let roomRegions = new Map<string, Array<string>>();
+  let bestScene = new Scene();
+  let bestRegions = new Map<string, Array<string>>();
+
+  let allResults: Array<Result> = [];
+
+  const manyRenderer = new RenderManyScenes(manyEl);
 
   function update() {
-    flattened = flattenScene(scene);
+    flattened = createFlattenedScene(scene);
     regions = findRegions(flattened);
 
     const cycle = sortedRegions(regions)[0];
 
     const roomWeights = roomsDefintion.roomWeights();
-    const results = generateRandomly(10, flattened, cycle, roomWeights);
-    console.log(results[0]);
+    allResults = generateRandomly(10, flattened, cycle, roomWeights);
 
-    roomScene = results[0].scene;
-    roomRegions = results[0].regions;
+    bestScene = allResults[0].scene;
+    bestRegions = allResults[0].regions;
 
     // const cuts = randomCutOffsets(roomsDefintion.numRooms(), 'zxcv');
     // console.log(cuts);
@@ -68,12 +71,13 @@ if (queryString === '?rooms') {
     if (_generation !== scene.generation()) {
       _generation = scene.generation();
       update();
+      manyRenderer.render(allResults.map((result) => result.scene));
     }
 
     clearRendering(paper1);
-    renderRegions(paper1, roomRegions, roomScene);
-    renderEdges(paper1, roomScene);
-    renderPoints(paper1, scene);
+    renderRegions(paper1, bestRegions, bestScene);
+    renderEdges(paper1, bestScene);
+    renderPoints(paper1, bestScene);
     renderHandles(paper1, editBehavior1.renderHints());
   }
 
@@ -114,7 +118,7 @@ else {
   let regions = new Map<string, Array<string>>();
 
   function update() {
-    flattened = flattenScene(scene);
+    flattened = createFlattenedScene(scene);
     regions = findRegions(flattened);
   }
 

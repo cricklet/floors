@@ -71,18 +71,15 @@ function removeIntersectionOnce(scene: Scene, edgeId: EdgeId, otherId: EdgeId) {
   return true;
 }
 
-export function flattenScene(source: Readonly<Scene>): Scene {
-  const flattened = new Scene();
-  flattened.cloneFrom(source);
-
+export function flattenScene(scene: Scene) {
   for (let i = 0; i < 1000; i++) {
     let foundIntersection = false;
 
-    const edgeIds = Array.from(flattened.edges().keys()).toSorted();
+    const edgeIds = Array.from(scene.edges().keys()).toSorted();
 
     for (const edgeId of edgeIds) {
       for (const otherId of edgeIds) {
-        const updated = removeIntersectionOnce(flattened, edgeId, otherId);
+        const updated = removeIntersectionOnce(scene, edgeId, otherId);
         if (updated) {
           foundIntersection = true;
           break;
@@ -98,6 +95,13 @@ export function flattenScene(source: Readonly<Scene>): Scene {
       break;
     }
   }
+}
+
+export function createFlattenedScene(source: Readonly<Scene>): Scene {
+  const flattened = new Scene();
+  flattened.cloneFrom(source);
+
+  flattenScene(flattened);
 
   return flattened;
 }
@@ -130,7 +134,7 @@ export function findIntersections(
 
 export function findEdgesSplitByPoint(
   scene: Readonly<Scene>,
-  target: paper.Point,
+  target: paper.Point
 ): Array<EdgeId> {
   const result = [];
 
