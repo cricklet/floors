@@ -7,8 +7,8 @@ import { clearRendering, renderEdges, renderHandles, renderPoints, renderRegions
 import { EditBehavior } from "./interactions";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea } from "./dom";
 import { setup } from "paper/dist/paper-core";
-import { createRoomPartitioner, defaultRoomsDefinition, generateRooms, randomCutGenerator, scoreRooms } from "./rooms";
-import {  pickBest } from "./genetic";
+import { defaultRoomsDefinition, generateRooms, scoreRooms } from "./rooms";
+import { generateRandomly } from "./genetic";
 
 const queryString = window.location.search;
 if (queryString === '?rooms') {
@@ -50,18 +50,11 @@ if (queryString === '?rooms') {
     const cycle = sortedRegions(regions)[0];
 
     const roomWeights = roomsDefintion.roomWeights();
-    const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
-    const initializer = randomCutGenerator(roomWeights.length, 'zxcv');
+    const results = generateRandomly(10, flattened, cycle, roomWeights);
+    console.log(results[0]);
 
-    const results = pickBest(runner, initializer, {
-      populationSize: 100,
-      numGenerations: 10,
-      mutationRate: 0.1,
-      survivalRate: 0.2,
-    });
-
-    roomScene = results.result.scene;
-    roomRegions = results.result.regions;
+    roomScene = results[0].scene;
+    roomRegions = results[0].regions;
 
     // const cuts = randomCutOffsets(roomsDefintion.numRooms(), 'zxcv');
     // console.log(cuts);

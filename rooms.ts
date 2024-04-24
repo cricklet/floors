@@ -321,15 +321,16 @@ export function scoreRooms(
     const normalizedRoomAreas = sortedRegions.map(
       (region) => region.area / averageRoomArea
     );
-    const nomralizedRoomWeights = sortedWeights.map(
+    const normalizedRoomWeights = sortedWeights.map(
       (weight) => weight / averageRoomWeight
     );
 
     for (const [area, weight] of zip(
       normalizedRoomAreas,
-      nomralizedRoomWeights
+      normalizedRoomWeights
     )) {
       const roomScore = 1 - Math.abs(area - weight) / Math.max(area, weight);
+      console.log(`room area score: ${roomScore} for area ${area} and weight ${weight}`);
       areaScores.push(roomScore);
     }
   }
@@ -359,7 +360,7 @@ export function scoreRooms(
 
 export function generateRooms(
   scene: Scene,
-  cycleIds: Array<PointId>,
+  cycleIds: ReadonlyArray<PointId>,
   roomWeights: ReadonlyArray<number>,
   cutOffsets: ReadonlyArray<number>
 ): Map<RegionId, Array<PointId>> {
@@ -380,43 +381,4 @@ export function generateRooms(
   }
 
   return regions;
-}
-
-export function randomCutGenerator(
-  numRooms: number,
-  seed: string
-): () => Array<number> {
-  const random = seedrandom(`${seed}`);
-
-  return () => {
-    const offsets: Array<number> = [];
-    for (let i = 1; i < numRooms; i++) {
-      offsets.push(random());
-    }
-    return offsets;
-  };
-}
-
-export function createRoomPartitioner(
-  source: Readonly<Scene>,
-  cycleIds: Array<PointId>,
-  roomWeights: ReadonlyArray<number>
-): Runner<{
-  scene: Scene;
-  regions: Map<RegionId, Array<PointId>>;
-}> {
-  const scene = source.clone();
-
-  return (parameters: Array<number>) => {
-    const regions = generateRooms(scene, cycleIds, roomWeights, parameters);
-    const score = scoreRooms(scene, regions, roomWeights);
-    return {
-      score,
-      result: {
-        scene: scene.clone(),
-        regions: regions,
-      },
-      parameters,
-    };
-  };
 }
