@@ -1,5 +1,6 @@
 export function findAllCycles<T>(
-  graph: Map<T, Array<T>>
+  graph: Map<T, Array<T>>,
+  maxCycleSize: number
 ): Array<Array<T>> {
   const seenCycles: Set<string> = new Set();
   const cycles: Array<Array<T>> = [];
@@ -16,7 +17,11 @@ export function findAllCycles<T>(
     return false;
   }
 
-  function dfs(node: T, visited: Set<T>, path: Array<T>) {
+  function dfs(node: T, visited: Set<T>, path: Array<T>, depthCutoff: number) {
+    if (depthCutoff <= 0) {
+      return;
+    }
+
     visited.add(node);
     path.push(node);
 
@@ -24,7 +29,7 @@ export function findAllCycles<T>(
 
     for (const neighbor of neighbors) {
       if (!visited.has(neighbor)) {
-        dfs(neighbor, visited, path);
+        dfs(neighbor, visited, path, depthCutoff - 1);
       } else if (path.includes(neighbor)) {
         const cycle = path.slice(path.indexOf(neighbor));
         if (cycle.length > 2) {
@@ -40,7 +45,7 @@ export function findAllCycles<T>(
   }
 
   for (const node of graph.keys()) {
-    dfs(node, new Set<T>(), []);
+    dfs(node, new Set<T>(), [], maxCycleSize);
   }
 
   return cycles;

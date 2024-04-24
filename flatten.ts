@@ -99,8 +99,6 @@ export function flattenScene(source: Readonly<Scene>): Scene {
     }
   }
 
-  console.log(`number of points: ${flattened.points().size}`);
-
   return flattened;
 }
 

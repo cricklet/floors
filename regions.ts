@@ -32,7 +32,7 @@ function findCyclesInEdges(scene: Readonly<Scene>): Array<Array<PointId>> {
   }
 
   _cachedGraphHash = scene.graphHash();
-  _cachedCycles = findAllCycles(graph);
+  _cachedCycles = findAllCycles(graph, 10);
 
   return _cachedCycles;
 }
@@ -82,31 +82,25 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
   // find cycles that do not contain any other cycles
   const minimalCycles = new Map<RegionId, Array<PointId>>();
 
-  // enumerate regions with index
-
   for (const [i, [regionId, [cycle, path]]] of enumerate(regions)) {
     let containsOtherCycle = false;
     let cycleSet = new Set(cycle);
     let edgesSet = cycleToEdges(cycle);
-
-    // console.log('')
-    // console.log('checking', regionId)
-    // console.log('edgesSet', edgesSet)
 
     for (const [j, [otherRegionId, [otherCycle, _]]] of enumerate(regions)) {
       if (regionId === otherRegionId) {
         continue;
       }
 
-      for (const otherPointId of otherCycle) {
-        if (cycleSet.has(otherPointId)) {
-          continue;
-        }
-        if (path.contains(scene.getPoint(otherPointId))) {
-          containsOtherCycle = true;
-          break;
-        }
-      }
+      // for (const otherPointId of otherCycle) {
+      //   if (cycleSet.has(otherPointId)) {
+      //     continue;
+      //   }
+      //   if (path.contains(scene.getPoint(otherPointId))) {
+      //     containsOtherCycle = true;
+      //     break;
+      //   }
+      // }
 
       for (let i = 0; i < otherCycle.length; i++) {
         const otherPointId1 = otherCycle[i];
@@ -136,7 +130,7 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
     }
   }
 
-  console.log(`# of cycles ${minimalCycles.size}`);
+  console.log(`checked ${regions.size} regions, found ${minimalCycles.size} minimal cycles`);
 
   return minimalCycles;
 }
