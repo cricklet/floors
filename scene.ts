@@ -271,3 +271,33 @@ export function defaultScene(): Scene {
 
   return scene;
 }
+
+export function singlePolygon(): Scene {
+  let scene = new Scene();
+
+  /*
+   a b c
+   d   f
+   g h i
+  */
+
+  const a = scene.addPoint(new paper.Point(-50, -50), "a");
+  const b = scene.addPoint(new paper.Point(0, -50), "b");
+  const c = scene.addPoint(new paper.Point(50, -50), "c");
+  const d = scene.addPoint(new paper.Point(-50, 0), "d");
+  const f = scene.addPoint(new paper.Point(50, 0), "f");
+  const g = scene.addPoint(new paper.Point(-50, 50), "g");
+  const h = scene.addPoint(new paper.Point(0, 50), "h");
+  const i = scene.addPoint(new paper.Point(50, 50), "i");
+
+  scene.addEdge(a, b);
+  scene.addEdge(b, c);
+  scene.addEdge(c, f);
+  scene.addEdge(f, i);
+  scene.addEdge(i, h);
+  scene.addEdge(h, g);
+  scene.addEdge(g, d);
+  scene.addEdge(d, a);
+
+  return scene;
+}

@@ -1,11 +1,8 @@
+<div id="tabs">
+  <!-- radio buttons for floorplan and split -->
+</div>
+
 <div id="container">
-  <textarea id="state" readonly></textarea>
-  <div>
-    <canvas id="canvas1"></canvas>
-  </div>
-  <div>
-    <canvas id="canvas2"></canvas>
-  </div>
 </div>
 
 <style>
@@ -41,18 +38,24 @@
 
   #container>* {
     border-radius: 8px;
+  }
+
+  #container>div {
     flex: 1;
     overflow: hidden;
   }
 
-  #state {
-    padding: 8px;
-    flex: 0.5;
-    overflow: auto;
-  }
-
   canvas {
     background-color: var(--white);
+  }
+
+  textarea {
+    resize: none;
+    padding: 8px;
+
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: hidden;
   }
 </style>
 

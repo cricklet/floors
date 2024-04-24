@@ -1,9 +1,12 @@
 import paper from "paper";
 import { Scene } from "./scene";
+import { RoomsDefinition } from "./rooms";
 
-export function setupPaper(canvasId: string): paper.PaperScope {
-  const canvasEl = document.getElementById(canvasId) as HTMLCanvasElement;
-  const divEl = canvasEl.parentElement as HTMLDivElement;
+export function setupPaper(
+  divEl: HTMLDivElement
+): [paper.PaperScope, () => void] {
+  const canvasEl = document.createElement("canvas");
+  divEl.appendChild(canvasEl);
 
   const paperScope = new paper.PaperScope();
   paperScope.setup(canvasEl);
@@ -23,16 +26,15 @@ export function setupPaper(canvasId: string): paper.PaperScope {
   window.addEventListener("resize", () => {
     updateSize();
   });
-  updateSize();
 
-  return paperScope;
+  return [paperScope, updateSize];
 }
 
-export function setupTextArea(
-  textAreaId: string,
+export function setupEncodedTextArea(
+  textArea: HTMLTextAreaElement,
   scene: Scene
-): HTMLTextAreaElement {
-  const textArea = document.getElementById(textAreaId) as HTMLTextAreaElement;
+) {
+  textArea.readOnly = true;
 
   // On paste, decode
   textArea.addEventListener("paste", (event) => {
@@ -49,6 +51,18 @@ export function setupTextArea(
   scene.addListener(update);
   update();
 
-  // TODO: cleanup function?
-  return textArea;
+  // TODO return cleanup?
+}
+
+export function setupRoomsTextArea(
+  textArea: HTMLTextAreaElement,
+  rooms: RoomsDefinition
+) {
+  textArea.value = rooms.encode();
+
+  textArea.addEventListener("input", (event) => {
+    rooms.decode(textArea.value);
+  });
+
+  // TODO return cleanup?
 }
