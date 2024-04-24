@@ -41,6 +41,7 @@ if (queryString === '?rooms') {
   let rooms: Array<Array<paper.Point>> = [];
 
   let roomScene = new Scene();
+  let roomRegions = new Map<string, Array<string>>();
 
   function update() {
     flattened = flattenScene(scene);
@@ -49,6 +50,8 @@ if (queryString === '?rooms') {
     const cycle = sortedRegions(regions)[0];
     roomScene = flattened.subset(cycle);
     rooms = generateRooms(roomScene, cycle, roomsDefintion.rooms());
+
+    roomRegions = findRegions(roomScene);
   }
 
   function render() {
@@ -59,7 +62,7 @@ if (queryString === '?rooms') {
     renderHandles(paper1, editBehavior1.renderHints());
 
     clearRendering(paper2);
-    renderRegions(paper2, regions, roomScene);
+    renderRegions(paper2, roomRegions, roomScene);
     renderEdges(paper2, roomScene);
     renderPoints(paper2, roomScene);
   }
