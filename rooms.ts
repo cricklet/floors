@@ -133,8 +133,8 @@ function pointAlongCycle(
   throw new Error(`Invalid t: ${t}`);
 }
 
-type Winding = "clockwise" | "counterclockwise";
-function windingOfCycle(cycle: Array<paper.Point>): Winding {
+export type Winding = "clockwise" | "counterclockwise";
+export function windingOfCycle(cycle: Array<paper.Point>): Winding {
   let sum = 0;
   for (let i = 0; i < cycle.length; i++) {
     const point1 = cycle[i];

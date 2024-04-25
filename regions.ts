@@ -2,6 +2,7 @@ import paper from "paper";
 import { findAllCycles } from "./cycles";
 import { EdgeId, PointId, Scene } from "./scene";
 import { faceColorForRegion } from "./render";
+import { windingOfCycle } from "./rooms";
 
 export type RegionId = string;
 
@@ -42,7 +43,9 @@ function cycleToEdges(cycle: Array<PointId>): Set<string> {
   return result;
 }
 
-export function* enumerateIndexAndItem<T>(it: Iterable<T>): Iterable<[number, T]> {
+export function* enumerateIndexAndItem<T>(
+  it: Iterable<T>
+): Iterable<[number, T]> {
   let i = 0;
   for (const item of it) {
     yield [i, item];
@@ -58,7 +61,142 @@ export function sortedRegions(
   return keys.map((key) => regions.get(key)!);
 }
 
-export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
+function angleOfEdge(p1: paper.Point, p2: paper.Point): number {
+  // eg: angleOfEdge(<0, 0>, <100, 100>) => 45
+  return Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI);
+}
+
+type DirectedEdgeId = string;
+
+function directedEdgeId(p1: PointId, p2: PointId): DirectedEdgeId {
+  return `${p1}-${p2}`;
+}
+
+function moduloAngle(start: number, other: number): number {
+  while (other < start) {
+    other += 360;
+  }
+  while (other > start + 360) {
+    other -= 360;
+  }
+  return other;
+}
+
+function findRegionsFast(scene: Scene): Map<RegionId, Array<PointId>> {
+  const anglesLookup: Map<PointId, Map<PointId, number>> = new Map();
+  const graph = scene.pointToPoints();
+  for (const [edge, [p1, p2]] of scene.edges()) {
+    const angle = angleOfEdge(scene.getPoint(p1), scene.getPoint(p2));
+    if (!anglesLookup.has(p1)) {
+      anglesLookup.set(p1, new Map());
+    }
+    if (!anglesLookup.has(p2)) {
+      anglesLookup.set(p2, new Map());
+    }
+    anglesLookup.get(p1)!.set(p2, angle);
+    anglesLookup.get(p2)!.set(p1, angle + 180);
+  }
+
+  function sortNeighbors(
+    last: PointId,
+    current: PointId
+  ): Array<[number, PointId]> {
+    const startAngle = moduloAngle(
+      0,
+      180 + anglesLookup.get(last)!.get(current)!
+    );
+
+    const neighbors = graph.get(current)!;
+    const neighborAngles = [...neighbors]
+      .filter((neighbor) => neighbor !== last)
+      .map((neighbor): [number, PointId] => {
+        return [anglesLookup.get(current)!.get(neighbor)!, neighbor];
+      })
+      .map(([neighborAngle, neighbor]): [number, PointId] => {
+        return [moduloAngle(startAngle, neighborAngle), neighbor];
+      })
+      .sort(([a1, _], [a2, __]) => a1 - a2);
+
+    return neighborAngles;
+  }
+
+  const regions = new Map<RegionId, Array<PointId>>();
+  const seenEdges = new Set<DirectedEdgeId>();
+
+  // calculate cycles, always counter-clockwise
+  for (const first of graph.keys()) {
+    for (const second of graph.get(first)!) {
+      const startingEdge = directedEdgeId(first, second);
+      // console.log("");
+
+      if (seenEdges.has(startingEdge)) {
+        continue;
+      }
+
+      // console.log(`starting ${first} -> ${second}`);
+
+      const seen = new Set<PointId>();
+      function traverse(
+        last: PointId,
+        current: PointId,
+        depth: number = 1
+      ): Array<PointId> | undefined {
+        let indent = "  ".repeat(depth);
+
+        if (seen.has(current)) {
+          return undefined;
+        }
+        seen.add(current);
+
+        const neighbors = sortNeighbors(last, current);
+        // console.log(`${indent}neighbors of ${current}: start ${moduloAngle(0, anglesLookup.get(last)!.get(current)!)} => ${neighbors.join(", ")}`);
+        for (const [_, neighbor] of neighbors) {
+          const nextDepth = depth + 1;
+
+          // console.log(`${indent}traversing ${current} -> ${neighbor}`);
+
+          if (neighbor === first) {
+            return [last, current];
+          }
+
+          const foundCycle = traverse(current, neighbor, nextDepth);
+          if (foundCycle !== undefined) {
+            const cycle = [last, ...foundCycle];
+            // console.log(`${indent}found cycle: ${cycle}`);
+            return cycle;
+          }
+        }
+
+        return undefined;
+      }
+
+      const cycle = traverse(first, second);
+      if (cycle === undefined) {
+        continue;
+      }
+
+      const cyclePoints = cycle.map((pointId) => scene.getPoint(pointId));
+      if (windingOfCycle(cyclePoints) === "counterclockwise") {
+        for (let i = 0; i < cycle.length; i++) {
+          const point1 = cycle[i];
+          const point2 = cycle[(i + 1) % cycle.length];
+          seenEdges.add(directedEdgeId(point1, point2));
+        }
+        regions.set(regionIdForCycle(cycle), cycle);
+      } else {
+        // console.log(`skipping cycle ${cycle}`);
+      }
+    }
+  }
+
+  // for (const [_, cycle] of regions) {
+  //   console.log(`cycle: ${cycle}`);
+  // }
+
+  return regions;
+}
+
+function findRegionsBrute(scene: Scene): Map<RegionId, Array<PointId>> {
   // find all cycles
   const cycles = findCyclesInEdges(scene);
   const regions = new Map<RegionId, [Array<PointId>, paper.Path]>();
@@ -82,20 +220,12 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
     let cycleSet = new Set(cycle);
     let edgesSet = cycleToEdges(cycle);
 
-    for (const [j, [otherRegionId, [otherCycle, _]]] of enumerateIndexAndItem(regions)) {
+    for (const [j, [otherRegionId, [otherCycle, _]]] of enumerateIndexAndItem(
+      regions
+    )) {
       if (regionId === otherRegionId) {
         continue;
       }
-
-      // for (const otherPointId of otherCycle) {
-      //   if (cycleSet.has(otherPointId)) {
-      //     continue;
-      //   }
-      //   if (path.contains(scene.getPoint(otherPointId))) {
-      //     containsOtherCycle = true;
-      //     break;
-      //   }
-      // }
 
       for (let i = 0; i < otherCycle.length; i++) {
         const otherPointId1 = otherCycle[i];
@@ -125,9 +255,29 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
     }
   }
 
-  // console.log(
-  //   `checked ${regions.size} regions, found ${minimalCycles.size} minimal cycles`
-  // );
-
   return minimalCycles;
+}
+
+const _SHOULD_CHECK = false;
+
+export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
+  const fast = findRegionsFast(scene);
+
+  if (_SHOULD_CHECK) {
+    const brute = findRegionsBrute(scene);
+
+    if (fast.size !== brute.size) {
+      throw new Error(
+        `fast.size ${fast.size} !== brute.size ${brute.size}`
+      );
+    }
+
+    for (const [regionId, cycle] of brute) {
+      if (!fast.has(regionId)) {
+        throw new Error(`missing region ${regionId}`);
+      }
+    }
+  }
+
+  return fast;
 }
