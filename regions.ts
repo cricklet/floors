@@ -21,7 +21,7 @@ function findCyclesInEdges(scene: Readonly<Scene>): Array<Array<PointId>> {
   const graph = scene.pointToSortedPoints();
 
   _cachedGraphHash = scene.graphHash();
-  _cachedCycles = findAllCycles(graph, 12);
+  _cachedCycles = findAllCycles(graph, 14);
 
   return _cachedCycles;
 }

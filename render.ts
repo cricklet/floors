@@ -205,7 +205,7 @@ export class RenderManyScenes {
 
     const gap = 8;
 
-    const gridSize = Math.min(4, Math.ceil(Math.sqrt(scenes.length)));
+    const gridSize = Math.min(3, Math.ceil(Math.sqrt(scenes.length)));
     let cellWidth = (width - gap * (gridSize - 1)) / gridSize;
     let cellHeight = cellWidth;
 
