@@ -47,43 +47,69 @@ if (queryString === '?rooms') {
 
   const manyRenderer = new RenderManyScenes(manyEl);
 
-  function updateEvolution() {
-    const cycle = sortedRegions(regions)[0];
-    const roomWeights = roomsDefintion.roomWeights();
+  let evolver: ReturnType<typeof evolve<PartitionResult>> | undefined = undefined;
 
-    const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
-    const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(), 'asdf');
-    allResults = evolve<PartitionResult>(runner, startingPopulation, {
-      numGenerations: 5,
-      mutationRate: 0.05,
-      survivalRate: 0.1,
-      cullPopulation: 0.6,
-    });
-
-    bestScene = allResults[0].scene;
-    bestRegions = allResults[0].regions;
-
-    manyRenderer.render(
-      allResults.map((result) => result.scene),
-      allResults.map((result) => `${result.score.toFixed(0)} (${result.generation})`)
-    );
-  }
-
-  function update() {
+  function startUpdate() {
     flattened = createFlattenedScene(scene);
     regions = findRegions(flattened);
 
     bestScene = undefined;
     bestRegions = new Map<string, Array<string>>();
-    updateEvolution();
+
+    const cycle = sortedRegions(regions)[0];
+    const roomWeights = roomsDefintion.roomWeights();
+
+    const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
+    const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(), 'asdf');
+    allResults = [];
+
+    evolver =
+      evolve<PartitionResult>(allResults, runner, startingPopulation, {
+        numGenerations: 10,
+        mutationRate: 0.05,
+        survivalRate: 0.2,
+        cullPopulation: 0.8,
+      });
+  }
+
+  function continueEvolving() {
+    if (!evolver) {
+      return;
+    }
+
+    const startTime = Date.now();
+
+    for (let i = 0; i < 1000; i++) {
+      if (Date.now() - startTime > 16) {
+        break;
+      }
+
+      const { done } = evolver.next();
+      if (done) {
+        evolver = undefined;
+        break;
+      }
+    }
+
+    bestScene = allResults[0].scene;
+    bestRegions = allResults[0].regions;
+
+    const fewerResults = allResults.slice(0, 20);
+
+    manyRenderer.render(
+      fewerResults.map((result) => result.scene),
+      fewerResults.map((result) => `${result.score.toFixed(0)} (${result.generation})`)
+    );
   }
 
   let _generation = -1;
   function render() {
     if (_generation !== scene.generation()) {
       _generation = scene.generation();
-      update();
+      startUpdate();
     }
+
+    continueEvolving();
 
     clearRendering(paper1);
 
@@ -101,8 +127,8 @@ if (queryString === '?rooms') {
     render();
   }, 1000 / 60);
 
-  roomsDefintion.addListener(update);
-  update();
+  roomsDefintion.addListener(startUpdate);
+  startUpdate();
 
   const editBehavior1 = new EditBehavior(paper1, scene);
 }

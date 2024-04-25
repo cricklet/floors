@@ -85,6 +85,13 @@ function pointAlongCycle(
   point: paper.Point;
   edge: [paper.Point, paper.Point];
 } {
+  while (t < 0) {
+    t += 1;
+  }
+  while (t > 1) {
+    t -= 1;
+  }
+
   const circumference = circumferenceOfCycle(cycle);
   const target = t * circumference;
 

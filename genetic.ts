@@ -21,55 +21,26 @@ export type EvolveResult<T> = {
   generation: number;
 } & T;
 
-// export function pickBest<T>(
-//   runner: Runner<T>,
-//   initializer: Initializer,
-//   parameters: GeneticParameters
-// ): Result<T> {
-//   const random = seedrandom("seed");
-//   const { populationSize, numGenerations, mutationRate, survivalRate } =
-//     parameters;
-
-//   let population: Array<Array<number>> = [];
-//   for (let i = 0; i < populationSize; i++) {
-//     population.push(initializer(i));
-//   }
-
-//   const results: Array<Result<T>> = population.map((parameters) => {
-//     return runner(parameters);
-//   });
-
-//   // Highest score first
-//   results.sort((a, b) => b.score - a.score);
-//   for (const result of results) {
-//     console.log(result.score);
-//   }
-
-//   return results[0];
-// }
-
-export function evolve<T extends HasScore>(
+export function* evolve<T extends HasScore>(
+  allResults: Array<EvolveResult<T>>,
   runner: Runner<T>,
   population: Array<Array<number>>,
-  parameters: GeneticParameters
-): Array<EvolveResult<T>> {
+  parameters: GeneticParameters,
+) {
   const random = seedrandom("seed");
-  const { numGenerations, mutationRate, survivalRate, cullPopulation } = parameters;
+  const { numGenerations, mutationRate, survivalRate, cullPopulation } =
+    parameters;
   let populationSize = population.length;
 
-  let allResults = [];
-
   for (let i = 0; i < numGenerations; i++) {
-    const results: Array<EvolveResult<T>> = population.map((parameters) => {
-      return {
+    for (const parameters of population) {
+      allResults.push({
         ...runner(parameters),
         parameters: parameters,
         generation: i + 1,
-      };
-    });
+      });
 
-    for (const result of results) {
-      allResults.push(result);
+      yield;
     }
     allResults.sort((a, b) => b.score - a.score);
 
@@ -78,10 +49,12 @@ export function evolve<T extends HasScore>(
       Math.ceil(survivalRate * populationSize)
     );
 
-
-    console.log(`generation ${i + 1} w/ population size ${populationSize} and ${survivors.length} survivors`)
-
-    populationSize *= cullPopulation;
+    console.log(
+      `generation ${i + 1} w/ population size ${populationSize} and ${
+        survivors.length
+      } survivors`
+    );
+    populationSize = Math.ceil(populationSize * cullPopulation);
 
     population = [];
     for (let i = 0; i < populationSize; i++) {
@@ -97,6 +70,4 @@ export function evolve<T extends HasScore>(
       population.push(newParameters);
     }
   }
-
-  return allResults;
 }
