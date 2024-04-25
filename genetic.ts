@@ -25,12 +25,13 @@ export function* evolve<T extends HasScore>(
   allResults: Array<EvolveResult<T>>,
   runner: Runner<T>,
   population: Array<Array<number>>,
-  parameters: GeneticParameters,
+  parameters: GeneticParameters
 ) {
   const random = seedrandom("seed");
   const { numGenerations, mutationRate, survivalRate, cullPopulation } =
     parameters;
-  let populationSize = population.length;
+  const startingPopuplationSize = population.length;
+  let currentPopulationSize = startingPopuplationSize;
 
   for (let i = 0; i < numGenerations; i++) {
     for (const parameters of population) {
@@ -43,21 +44,22 @@ export function* evolve<T extends HasScore>(
       yield;
     }
     allResults.sort((a, b) => b.score - a.score);
+    allResults.length = startingPopuplationSize; // lol
 
     const survivors = allResults.slice(
       0,
-      Math.ceil(survivalRate * populationSize)
+      Math.ceil(survivalRate * currentPopulationSize)
     );
 
     console.log(
-      `generation ${i + 1} w/ population size ${populationSize} and ${
+      `generation ${i + 1} w/ population size ${currentPopulationSize} and ${
         survivors.length
       } survivors`
     );
-    populationSize = Math.ceil(populationSize * cullPopulation);
+    currentPopulationSize = Math.ceil(currentPopulationSize * cullPopulation);
 
     population = [];
-    for (let i = 0; i < populationSize; i++) {
+    for (let i = 0; i < currentPopulationSize; i++) {
       const survivorIndex =
         i < survivors.length ? i : Math.floor(random() * survivors.length);
 

@@ -65,10 +65,10 @@ if (queryString === '?rooms') {
 
     evolver =
       evolve<PartitionResult>(allResults, runner, startingPopulation, {
-        numGenerations: 10,
+        numGenerations: 20,
         mutationRate: 0.05,
         survivalRate: 0.2,
-        cullPopulation: 0.8,
+        cullPopulation: 0.95,
       });
   }
 
