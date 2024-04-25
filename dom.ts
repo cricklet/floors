@@ -2,9 +2,7 @@ import paper from "paper";
 import { Scene } from "./scene";
 import { RoomsDefinition } from "./rooms";
 
-export function setupPaper(
-  divEl: HTMLDivElement
-): paper.PaperScope {
+export function setupPaper(divEl: HTMLDivElement): paper.PaperScope {
   const canvasEl = document.createElement("canvas");
   divEl.appendChild(canvasEl);
 
@@ -66,4 +64,18 @@ export function setupRoomsTextArea(
   });
 
   // TODO return cleanup?
+}
+
+export function debounce(func: () => void, wait: number) {
+  let timeout: number;
+
+  return function () {
+    const later = () => {
+      timeout = 0;
+      func();
+    };
+
+    clearTimeout(timeout);
+    timeout = window.setTimeout(later, wait);
+  };
 }

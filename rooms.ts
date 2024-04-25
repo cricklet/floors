@@ -378,8 +378,7 @@ export function scoreRooms(
 
   // console.log(`correct num rooms score: ${numRoomsScore}`);
 
-  // const overall = Math.floor((avg(areaScores) + avg(roundnessScores)) * numRoomsScore * 100);
-  const overall = numRoomsScore * 100;
+  const overall = Math.floor((avg(areaScores) + avg(roundnessScores)) * numRoomsScore * 100);
   return overall;
 }
 
@@ -396,15 +395,7 @@ export function generateRooms(
   const cycle = cycleIds.map((pointId) => scene.getPoint(pointId));
   const winding = windingOfCycle(cycle);
 
-  let t = 0;
-  for (const [i, dt] of enumerateIndexAndItem(cutOffsets)) {
-    t += dt;
-    while (t >= 1) {
-      t -= 1;
-    }
-    while (t < 0) {
-      t += 1;
-    }
+  for (const [i, t] of enumerateIndexAndItem(cutOffsets)) {
     makeCut(scene, cycleIds, cycle, winding, t, `${i}`);
   }
 

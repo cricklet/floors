@@ -12,6 +12,7 @@ export type GeneticParameters = {
   numGenerations: number;
   mutationRate: number;
   survivalRate: number;
+  cullPopulation: number;
 };
 
 export type EvolveResult<T> = {
@@ -53,31 +54,34 @@ export function evolve<T extends HasScore>(
   parameters: GeneticParameters
 ): Array<EvolveResult<T>> {
   const random = seedrandom("seed");
-  const { numGenerations, mutationRate, survivalRate } = parameters;
+  const { numGenerations, mutationRate, survivalRate, cullPopulation } = parameters;
   let populationSize = population.length;
 
   let allResults = [];
 
   for (let i = 0; i < numGenerations; i++) {
-    const results: Array<EvolveResult<T>> = population.map((parameters, i) => {
+    const results: Array<EvolveResult<T>> = population.map((parameters) => {
       return {
         ...runner(parameters),
         parameters: parameters,
-        generation: i,
+        generation: i + 1,
       };
     });
-
-    // Highest score first
-    results.sort((a, b) => b.score - a.score);
 
     for (const result of results) {
       allResults.push(result);
     }
+    allResults.sort((a, b) => b.score - a.score);
 
-    const survivors = results.slice(
+    const survivors = allResults.slice(
       0,
       Math.ceil(survivalRate * populationSize)
     );
+
+
+    console.log(`generation ${i + 1} w/ population size ${populationSize} and ${survivors.length} survivors`)
+
+    populationSize *= cullPopulation;
 
     population = [];
     for (let i = 0; i < populationSize; i++) {
@@ -93,8 +97,6 @@ export function evolve<T extends HasScore>(
       population.push(newParameters);
     }
   }
-
-  allResults.sort((a, b) => b.score - a.score);
 
   return allResults;
 }

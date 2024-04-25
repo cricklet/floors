@@ -5,7 +5,7 @@ import { createFlattenedScene } from "./flatten";
 import { findRegions, sortedRegions } from "./regions";
 import { RenderManyScenes, clearRendering, renderEdges, renderHandles, renderPoints, renderRegions } from "./render";
 import { EditBehavior } from "./interactions";
-import { setupPaper, setupEncodedTextArea, setupRoomsTextArea } from "./dom";
+import { setupPaper, setupEncodedTextArea, setupRoomsTextArea, debounce } from "./dom";
 import { setup } from "paper/dist/paper-core";
 import { PartitionResult, createRoomPartitioner, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms } from "./rooms";
 import { EvolveResult, evolve } from "./genetic";
@@ -40,30 +40,42 @@ if (queryString === '?rooms') {
   let flattened = new Scene();
   let regions = new Map<string, Array<string>>();
 
-  let bestScene = new Scene();
+  let bestScene: Scene | undefined = new Scene();
   let bestRegions = new Map<string, Array<string>>();
 
   let allResults: Array<EvolveResult<PartitionResult>> = [];
 
   const manyRenderer = new RenderManyScenes(manyEl);
 
-  function update() {
-    flattened = createFlattenedScene(scene);
-    regions = findRegions(flattened);
-
+  function updateEvolution() {
     const cycle = sortedRegions(regions)[0];
     const roomWeights = roomsDefintion.roomWeights();
 
     const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
-    const startingPopulation = generateRandomCuts(10, roomsDefintion.numRooms(), 'asdf');
+    const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(), 'asdf');
     allResults = evolve<PartitionResult>(runner, startingPopulation, {
-      numGenerations: 10,
-      mutationRate: 0.5,
-      survivalRate: 0.2,
+      numGenerations: 5,
+      mutationRate: 0.05,
+      survivalRate: 0.1,
+      cullPopulation: 0.6,
     });
 
     bestScene = allResults[0].scene;
     bestRegions = allResults[0].regions;
+
+    manyRenderer.render(
+      allResults.map((result) => result.scene),
+      allResults.map((result) => `${result.score.toFixed(0)} (${result.generation})`)
+    );
+  }
+
+  function update() {
+    flattened = createFlattenedScene(scene);
+    regions = findRegions(flattened);
+
+    bestScene = undefined;
+    bestRegions = new Map<string, Array<string>>();
+    updateEvolution();
   }
 
   let _generation = -1;
@@ -71,15 +83,16 @@ if (queryString === '?rooms') {
     if (_generation !== scene.generation()) {
       _generation = scene.generation();
       update();
-      manyRenderer.render(
-        allResults.map((result) => result.scene),
-        allResults.map((result) => `${result.score.toFixed(0)} (${result.generation})`)
-      );
     }
 
     clearRendering(paper1);
-    renderRegions(paper1, bestRegions, bestScene);
-    renderEdges(paper1, bestScene);
+
+    if (bestScene) {
+      renderRegions(paper1, bestRegions, bestScene);
+      renderEdges(paper1, bestScene);
+    } else {
+      renderEdges(paper1, scene);
+    }
     renderPoints(paper1, scene);
     renderHandles(paper1, editBehavior1.renderHints());
   }
