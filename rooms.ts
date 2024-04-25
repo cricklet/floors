@@ -506,11 +506,11 @@ export function weightForRegionLookup(
   const regionsAndAreas: Array<[RegionId, number]> = [...regions.keys()].map(
     (regionId) => [regionId, areas.get(regionId)!]
   );
-  regionsAndAreas.sort((a, b) => a[1] - b[1]);
-  console.log(regionsAndAreas);
+  regionsAndAreas.sort((a, b) => b[1] - a[1]);
+  const sortedWeights = weights.slice().sort((a, b) => b - a);
 
   const lookup: Map<RegionId, number> = new Map();
-  for (const [[regionId, _], weight] of zip(regionsAndAreas, weights)) {
+  for (const [[regionId, _], weight] of zip(regionsAndAreas, sortedWeights)) {
     lookup.set(regionId, weight);
   }
 

@@ -123,7 +123,13 @@ if (queryString === '?evolve') {
       renderRegions(paper1, bestRegions, bestScene, {
         regionNamer: (regionId) => `${lookup(regionId)}`
       });
-      renderEdges(paper1, bestScene);
+      renderEdges(paper1, bestScene, {
+        edgeWidth: 1,
+        showEdgeLengths: true,
+      });
+      renderEdges(paper1, scene, {
+        hideLabels: true,
+      });
     } else {
       renderEdges(paper1, scene);
     }
@@ -247,12 +253,17 @@ else if (queryString === '?rooms') {
         });
         renderEdges(paper1, bestScene, {
           edgeWidth: 1,
+          hideLabels: true,
         });
-        renderEdges(paper1, flattened);
+        renderEdges(paper1, flattened, {
+          hideLabels: true,
+        });
       }
     }
 
-    renderPoints(paper1, flattened);
+    renderPoints(paper1, flattened, {
+      hideLabels: true,
+    });
     renderHandles(paper1, editBehavior1.renderHints());
   }
 

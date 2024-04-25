@@ -95,7 +95,9 @@ export function renderHandles(
   }
 }
 
-export function renderPoints(scope: paper.PaperScope, scene: Scene) {
+export function renderPoints(scope: paper.PaperScope, scene: Scene, options: {
+  hideLabels?: boolean;
+} = {}) {
   for (const [pointId, point] of scene.points()) {
     const [fill, stroke, size] = DEFAULT;
 
@@ -105,7 +107,7 @@ export function renderPoints(scope: paper.PaperScope, scene: Scene) {
     circle.strokeWidth = 1;
     scope.project.activeLayer.addChild(circle);
 
-    if (pointId.length < 6) {
+    if (pointId.length < 6 && !options.hideLabels) {
       const text = new paper.PointText(point.add(new paper.Point(3, -3)));
       text.fontSize = 6;
       text.content = `${pointId}`;
@@ -119,6 +121,8 @@ export function renderEdges(
   scene: Scene,
   options: {
     edgeWidth?: number;
+    showEdgeLengths?: boolean;
+    hideLabels?: boolean;
   } = {}
 ) {
   for (const [edge, [point1Id, point2Id]] of scene.edges()) {
@@ -131,24 +135,29 @@ export function renderEdges(
     line.strokeCap = "round";
     scope.project.activeLayer.addChild(line);
 
-    if (edge.length < 10) {
+    let label = edge;
+    if (options.showEdgeLengths) {
+      const length = point1.getDistance(point2);
+      label = `${length.toFixed(0)}px`;
+    }
+
+    if (label.length < 10 && !options.hideLabels) {
       const [a, b] = orderPoints(point1, point2);
       const vector = b.subtract(a);
-      const center = a.add(vector.multiply(0.6));
+      const center = a.add(vector.multiply(0.5));
 
       const vectorPerpendicular = vector
         .rotate(90, new paper.Point(0, 0))
         .normalize();
       const offset = vectorPerpendicular
-        .multiply(4)
-        .add(vector.normalize().multiply(10));
+        .multiply(3.2);
 
       const labelPoint = center.add(offset);
 
       const text = new paper.PointText(labelPoint);
       text.rotate(vector.angle, labelPoint);
       text.fontSize = 2;
-      text.content = `${edge}`;
+      text.content = `${label}`;
       text.justification = "center";
       scope.project.activeLayer.addChild(text);
     }
