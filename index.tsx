@@ -7,7 +7,7 @@ import { RenderManyScenes, clearRendering, renderEdges, renderHandles, renderPoi
 import { EditBehavior } from "./interactions";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea, debounce } from "./dom";
 import { setup } from "paper/dist/paper-core";
-import { PartitionResult, createRoomPartitioner, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms } from "./rooms";
+import { PartitionResult, createRoomPartitioner, defaultManyRooms, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms } from "./rooms";
 import { EvolveResult, evolve } from "./genetic";
 
 const queryString = window.location.search;
@@ -62,6 +62,10 @@ if (queryString === '?rooms') {
     const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
     const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(0), 'asdf');
     allResults = [];
+
+    if (evolver) {
+      evolver.return();
+    }
 
     evolver =
       evolve<PartitionResult>(allResults, runner, startingPopulation, {
@@ -152,34 +156,101 @@ else {
 
   const paper1 = setupPaper(editEl);
 
+  const roomsDefintion = defaultManyRooms();
   const scene = defaultScene();
+
   setupEncodedTextArea(encodedTextArea, scene);
+  setupRoomsTextArea(roomsTextArea, roomsDefintion);
 
   let flattened = new Scene();
   let regions = new Map<string, Array<string>>();
 
-  function update() {
+  let evolvers = new Array<{
+    results: Array<EvolveResult<PartitionResult>>,
+    generator: ReturnType<typeof evolve<PartitionResult>>
+  }>();
+
+  let _generation = -1;
+  function startUpdating() {
+    if (_generation === scene.generation()) {
+      return;
+    }
+
+    _generation = scene.generation();
+
     flattened = createFlattenedScene(scene);
     regions = findRegions(flattened);
+
+    const sorted = sortedRegions(regions);
+
+    for (const evolver of evolvers) {
+      evolver.generator.return();
+    }
+
+    evolvers = sorted.map((cycle, i) => {
+      const roomWeights = roomsDefintion.roomWeights(i);
+      const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
+      const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(0), 'asdf');
+
+      const allResults: Array<EvolveResult<PartitionResult>> = [];
+      const generator = evolve<PartitionResult>(allResults, runner, startingPopulation, {
+        numGenerations: 20,
+        mutationRate: 0.05,
+        survivalRate: 0.2,
+        cullPopulation: 0.95,
+      });
+
+      return { results: allResults, generator };
+    });
+  }
+
+  function continueUpdating() {
+    const startTime = Date.now();
+
+    for (let i = 0; i < 1000; i++) {
+      if (Date.now() - startTime > 16) {
+        break;
+      }
+
+      for (const evolver of evolvers) {
+        const { done } = evolver.generator.next();
+        if (done) {
+          continue;
+        }
+      }
+    }
   }
 
   function render() {
+    startUpdating();
+    continueUpdating();
+
     clearRendering(paper1);
-    renderRegions(paper1, regions, flattened);
-    renderEdges(paper1, flattened);
     renderPoints(paper1, flattened);
     renderHandles(paper1, editBehavior1.renderHints());
+
+    if (evolvers.length === 0) {
+      renderRegions(paper1, regions, flattened);
+      renderEdges(paper1, flattened);
+    } else {
+      for (const evolver of evolvers) {
+        const bestScene = evolver.results[0].scene;
+        const bestRegions = evolver.results[0].regions;
+
+        renderRegions(paper1, bestRegions, bestScene);
+        renderEdges(paper1, bestScene);
+      }
+    }
   }
 
   setInterval(() => {
     render();
   }, 1000 / 60);
 
-  scene.addListener(update);
-  update();
+  startUpdating();
 
   window.addEventListener("resize", () => {
-    update();
+    startUpdating();
   });
 
   const editBehavior1 = new EditBehavior(paper1, scene);

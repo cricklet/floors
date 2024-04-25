@@ -65,6 +65,10 @@ export function defaultRoomsDefinition(): RoomsDefinition {
   return new RoomsDefinition([[1, 1, 1, 1]]);
 }
 
+export function defaultManyRooms(): RoomsDefinition {
+  return new RoomsDefinition([[1, 1, 1, 1], [2, 1], [1], [1, 1, 1]]);
+}
+
 function* iterateEdgesAndCumulativeDistance(
   cycle: Array<paper.Point>
 ): Iterable<[number, paper.Point, number, paper.Point]> {
