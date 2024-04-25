@@ -246,7 +246,7 @@ function makeCut(
   const { point: start, edge: startEdgePoints } = pointAlongCycle(cycle, t);
   const startSplit = findSplitTarget(scene, start, 0.1);
   if (!startSplit) {
-    console.error(`couldn't find edge to split at ${start} in cycle ${cycle}`);
+    console.warn(`couldn't find edge to split at ${start} in cycle ${cycle}`);
     return false;
   }
 
@@ -259,7 +259,7 @@ function makeCut(
 
   const end = raycast(scene, start, cutDirection, startEdgeId);
   if (!end) {
-    console.error(
+    console.warn(
       `couldn't find intersection for cut ${start} on ${startEdgeId} in direction ${cutDirection} for cycle ${cycleIds} with winding ${winding}`
     );
     return false;

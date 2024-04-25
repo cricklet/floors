@@ -150,13 +150,13 @@ export function renderEdges(
         .rotate(90, new paper.Point(0, 0))
         .normalize();
       const offset = vectorPerpendicular
-        .multiply(3.2);
+        .multiply(3.5);
 
       const labelPoint = center.add(offset);
 
       const text = new paper.PointText(labelPoint);
       text.rotate(vector.angle, labelPoint);
-      text.fontSize = 2;
+      text.fontSize = 3;
       text.content = `${label}`;
       text.justification = "center";
       scope.project.activeLayer.addChild(text);
