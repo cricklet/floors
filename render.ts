@@ -95,9 +95,13 @@ export function renderHandles(
   }
 }
 
-export function renderPoints(scope: paper.PaperScope, scene: Scene, options: {
-  hideLabels?: boolean;
-} = {}) {
+export function renderPoints(
+  scope: paper.PaperScope,
+  scene: Scene,
+  options: {
+    hideLabels?: boolean;
+  } = {}
+) {
   for (const [pointId, point] of scene.points()) {
     const [fill, stroke, size] = DEFAULT;
 
@@ -149,8 +153,7 @@ export function renderEdges(
       const vectorPerpendicular = vector
         .rotate(90, new paper.Point(0, 0))
         .normalize();
-      const offset = vectorPerpendicular
-        .multiply(3.5);
+      const offset = vectorPerpendicular.multiply(3.5);
 
       const labelPoint = center.add(offset);
 
@@ -169,7 +172,7 @@ export function renderRegions(
   regions: Map<RegionId, Array<PointId>>,
   scene: Scene,
   options: {
-    regionNamer?: (regionId: RegionId) => string;
+    regionNamer?: (regionId: RegionId, i?: number) => string;
   } = {}
 ) {
   for (const [i, [regionId, cycle]] of enumerateIndexAndItem(regions)) {
@@ -182,10 +185,10 @@ export function renderRegions(
     scope.project.activeLayer.addChild(regionPath);
 
     const label = options.regionNamer
-      ? options.regionNamer(regionId)
+      ? options.regionNamer(regionId, i)
       : regionId.length < 15
-      ? `${i}:${regionId}`
-      : `${i}`;
+      ? `${regionId}`
+      : ``;
 
     const text = new paper.PointText(regionPath.interiorPoint);
     text.fontSize = 4;

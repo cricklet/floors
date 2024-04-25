@@ -1,4 +1,5 @@
 node_modules
 *.js
 .vscode
-*.txt
+notes.txt
+times.txt

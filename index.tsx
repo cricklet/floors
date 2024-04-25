@@ -10,6 +10,8 @@ import { setup } from "paper/dist/paper-core";
 import { PartitionResult, createRoomPartitioner, defaultManyRooms, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms, weightForRegionLookup } from "./rooms";
 import { EvolveResult, evolve } from "./genetic";
 
+const STARTING_POPULATION = 400;
+
 const queryString = window.location.search;
 if (queryString === '?evolve') {
   const containerEl = document.getElementById("container") as HTMLDivElement;
@@ -58,7 +60,7 @@ if (queryString === '?evolve') {
     const roomWeights = roomsDefintion.roomWeights(0);
 
     const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
-    const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(0), 'asdf');
+    const startingPopulation = generateRandomCuts(STARTING_POPULATION, roomsDefintion.numRooms(0), 'asdf');
     allResults = [];
 
     if (evolver) {
@@ -133,7 +135,9 @@ if (queryString === '?evolve') {
     } else {
       renderEdges(paper1, scene);
     }
-    renderPoints(paper1, scene);
+    renderPoints(paper1, scene, {
+      hideLabels: true,
+    });
     renderHandles(paper1, editBehavior1.renderHints());
   }
 
@@ -196,7 +200,7 @@ else if (queryString === '?rooms') {
     evolvers = sorted.map((cycle, i) => {
       const roomWeights = roomsDefintion.roomWeights(i);
       const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
-      const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(i), 'asdf');
+      const startingPopulation = generateRandomCuts(STARTING_POPULATION, roomsDefintion.numRooms(i), 'asdf');
 
       const allResults: Array<EvolveResult<PartitionResult>> = [];
       const generator = evolve<PartitionResult>(allResults, runner, startingPopulation, {
