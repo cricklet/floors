@@ -11,20 +11,24 @@ import { EdgeId, PointId, Scene } from "./scene";
 import { Runner } from "./genetic";
 
 export class RoomsDefinition {
-  private _rooms: Array<number>;
+  private _roomsPerRegion: Array<Array<number>>;
   private _listeners: Array<() => void>;
 
-  constructor(rooms: Array<number>) {
-    this._rooms = rooms;
+  constructor(rooms: Array<Array<number>>) {
+    this._roomsPerRegion = rooms;
     this._listeners = [];
   }
 
-  roomWeights(): ReadonlyArray<number> {
-    return this._rooms;
+  roomWeights(i: number): ReadonlyArray<number> {
+    if (i < this._roomsPerRegion.length) {
+      return this._roomsPerRegion[i];
+    } else {
+      return [];
+    }
   }
 
-  numRooms(): number {
-    return this._rooms.length;
+  numRooms(i: number): number {
+    return this.roomWeights(i).length;
   }
 
   addListener(listener: () => void) {
@@ -32,24 +36,33 @@ export class RoomsDefinition {
   }
 
   encode(): string {
-    return this._rooms.join(" ");
+    return this._roomsPerRegion.map((rooms) => rooms.join(" ")).join("\n");
   }
 
   decode(encoded: string) {
     const cleaned = encoded.replace(/[^\s\d.]+/g, "");
-    const split = cleaned.split(/\s+/).filter((x) => x.length > 0);
 
-    const rooms = split
-      .map((x) => parseFloat(x))
-      .filter((x) => !isNaN(x) && x > 0);
-    this._rooms = rooms;
+    const roomsPerRegion = [];
+    for (const line of cleaned.split("\n")) {
+      if (line.trim() === "") {
+        continue;
+      }
 
+      const rooms = line
+        .split(" ")
+        .map((x) => parseFloat(x))
+        .filter((x) => !isNaN(x) && x > 0);
+
+      roomsPerRegion.push(rooms);
+    }
+
+    this._roomsPerRegion = roomsPerRegion;
     this._listeners.forEach((listener) => listener());
   }
 }
 
 export function defaultRoomsDefinition(): RoomsDefinition {
-  return new RoomsDefinition([1, 1, 1, 1]);
+  return new RoomsDefinition([[1, 1, 1, 1]]);
 }
 
 function* iterateEdgesAndCumulativeDistance(
@@ -385,7 +398,9 @@ export function scoreRooms(
 
   // console.log(`correct num rooms score: ${numRoomsScore}`);
 
-  const overall = Math.floor((avg(areaScores) + avg(roundnessScores)) * numRoomsScore * 100);
+  const overall = Math.floor(
+    (avg(areaScores) + avg(roundnessScores)) * numRoomsScore * 100
+  );
   return overall;
 }
 

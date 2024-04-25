@@ -51,11 +51,11 @@ export function* evolve<T extends HasScore>(
       Math.ceil(survivalRate * currentPopulationSize)
     );
 
-    console.log(
-      `generation ${i + 1} w/ population size ${currentPopulationSize} and ${
-        survivors.length
-      } survivors`
-    );
+    // console.log(
+    //   `generation ${i + 1} w/ population size ${currentPopulationSize} and ${
+    //     survivors.length
+    //   } survivors`
+    // );
     currentPopulationSize = Math.ceil(currentPopulationSize * cullPopulation);
 
     population = [];

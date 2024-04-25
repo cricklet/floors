@@ -57,10 +57,10 @@ if (queryString === '?rooms') {
     bestRegions = new Map<string, Array<string>>();
 
     const cycle = sortedRegions(regions)[0];
-    const roomWeights = roomsDefintion.roomWeights();
+    const roomWeights = roomsDefintion.roomWeights(0);
 
     const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
-    const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(), 'asdf');
+    const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(0), 'asdf');
     allResults = [];
 
     evolver =
@@ -143,14 +143,14 @@ else {
   encodedTextArea.style.flex = "0.2";
   containerEl.appendChild(encodedTextArea);
 
-  const div1El = document.createElement("div");
-  containerEl.appendChild(div1El);
+  const editEl = document.createElement("div");
+  containerEl.appendChild(editEl);
 
-  const div2El = document.createElement("div");
-  containerEl.appendChild(div2El);
+  const roomsTextArea = document.createElement("textarea");
+  roomsTextArea.style.flex = "0.2";
+  containerEl.appendChild(roomsTextArea);
 
-  const paper1 = setupPaper(div1El);
-  const paper2 = setupPaper(div2El);
+  const paper1 = setupPaper(editEl);
 
   const scene = defaultScene();
   setupEncodedTextArea(encodedTextArea, scene);
@@ -165,15 +165,10 @@ else {
 
   function render() {
     clearRendering(paper1);
-    renderEdges(paper1, scene);
-    renderPoints(paper1, scene);
+    renderRegions(paper1, regions, flattened);
+    renderEdges(paper1, flattened);
+    renderPoints(paper1, flattened);
     renderHandles(paper1, editBehavior1.renderHints());
-
-    clearRendering(paper2);
-    renderRegions(paper2, regions, flattened);
-    renderEdges(paper2, flattened);
-    renderPoints(paper2, flattened);
-    renderHandles(paper2, editBehavior2.renderHints());
   }
 
   setInterval(() => {
@@ -188,5 +183,4 @@ else {
   });
 
   const editBehavior1 = new EditBehavior(paper1, scene);
-  const editBehavior2 = new EditBehavior(paper2, scene);
 }

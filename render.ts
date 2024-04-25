@@ -210,7 +210,6 @@ export class RenderManyScenes {
     let cellHeight = cellWidth;
 
     const gridZoom = cellWidth / 200;
-    console.log("gridZoom", gridZoom, width, cellWidth);
 
     for (const [i, scene] of enumerateIndexAndItem(scenes)) {
       const divEl = document.createElement("div");
