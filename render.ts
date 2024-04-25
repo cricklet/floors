@@ -202,7 +202,6 @@ export class RenderManyScenes {
     this._clear();
 
     const width = this._containerEl.clientWidth;
-    const height = this._containerEl.clientHeight;
 
     const gap = 8;
 
