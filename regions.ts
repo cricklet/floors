@@ -72,7 +72,7 @@ function directedEdgeId(p1: PointId, p2: PointId): DirectedEdgeId {
   return `${p1}-${p2}`;
 }
 
-function moduloAngle(start: number, other: number): number {
+export function moduloAngle(start: number, other: number): number {
   while (other < start) {
     other += 360;
   }

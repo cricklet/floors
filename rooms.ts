@@ -10,6 +10,7 @@ import {
   RegionId,
   enumerateIndexAndItem,
   findRegions,
+  moduloAngle,
   sortedRegions,
 } from "./regions";
 import { EdgeId, PointId, Scene } from "./scene";
@@ -363,11 +364,19 @@ function regionsWithMetadata(
   return results;
 }
 
+function angleDifference(angle1: number, angle2: number): number {
+  angle1 = moduloAngle(0, angle1);
+  angle2 = moduloAngle(0, angle2);
+
+  let difference = Math.abs(angle1 - angle2);
+  return Math.min(difference, 360 - difference);
+}
+
 export function scoreRooms(
   scene: Scene,
   regions: ReadonlyArray<RegionWithMetadata>,
   weights: ReadonlyArray<number>
-): number {
+): { score: number; scoreParts: ScoreParts } {
   const sortedRegions = regions.slice();
   sortedRegions.sort((a, b) => a.area - b.area);
   const sortedWeights = weights.slice().sort((a, b) => a - b);
@@ -393,7 +402,8 @@ export function scoreRooms(
       normalizedRoomAreas,
       normalizedRoomWeights
     )) {
-      const roomScore = 1 - Math.abs(area - weight) / Math.max(area, weight);
+      let roomScore = 1 - Math.abs(area - weight) / Math.max(area, weight);
+      roomScore = Math.pow(roomScore, 0.75); // Prioritize perfect areas a little less
       // console.log(
       //   `room area score: ${roomScore} for area ${area} and weight ${weight}`
       // );
@@ -402,7 +412,7 @@ export function scoreRooms(
   }
 
   // Room 'roundness' score
-  const roundnessScores = [];
+  const squarenessScores = [];
   {
     for (const { circumference, area } of sortedRegions) {
       const ideal = 1 / 16;
@@ -410,7 +420,31 @@ export function scoreRooms(
       const roundnessScore =
         1 - Math.abs(roundness - ideal) / Math.max(roundness, ideal);
 
-      roundnessScores.push(roundnessScore);
+      squarenessScores.push(roundnessScore);
+    }
+  }
+
+  // Avoid acute angles
+  const nonAcuteScores = [];
+  const ACUTE_THRESHOLD = 80;
+  {
+    for (const region of sortedRegions) {
+      const points = region.pointIds.map((pointId) => scene.getPoint(pointId));
+
+      let score = 1;
+      for (let i = 0; i < points.length; i++) {
+        const point1 = points[i];
+        const point2 = points[(i + 1) % points.length];
+        const point3 = points[(i + 2) % points.length];
+
+        const angle1 = point1.subtract(point2).angle;
+        const angle2 = point3.subtract(point2).angle;
+        const difference = angleDifference(angle1, angle2);
+
+        score *= Math.min(ACUTE_THRESHOLD, difference) / ACUTE_THRESHOLD;
+      }
+
+      nonAcuteScores.push(score);
     }
   }
 
@@ -422,12 +456,22 @@ export function scoreRooms(
     4
   );
 
-  // console.log(`correct num rooms score: ${numRoomsScore}`);
+  const areaScore = avg(areaScores);
+  const squarenessScore = mult(squarenessScores);
+  const anglesScore = avg(nonAcuteScores);
 
   const overall = Math.ceil(
-    (avg(areaScores) + avg(roundnessScores)) * numRoomsScore * 100
+    (areaScore * (squarenessScore + anglesScore)) * numRoomsScore * 100
   );
-  return overall;
+  return {
+    score: overall,
+    scoreParts: {
+      area: Math.ceil(areaScore * 100),
+      roundness: Math.ceil(squarenessScore * 100),
+      angles: Math.ceil(anglesScore * 100),
+      rooms: Math.ceil(numRoomsScore * 100),
+    },
+  };
 }
 
 export function generateRooms(
@@ -450,11 +494,19 @@ export function generateRooms(
   return findRegions(scene);
 }
 
+export interface ScoreParts {
+  area: number;
+  roundness: number;
+  angles: number;
+  rooms: number;
+}
+
 export type PartitionResult = {
   scene: Scene;
   regions: Map<RegionId, Array<PointId>>;
   regionAreas: Map<RegionId, number>;
   score: number;
+  scoreParts: ScoreParts;
 };
 
 export function generateRandomCuts(
@@ -486,9 +538,10 @@ export function createRoomPartitioner(
 
     const regions = generateRooms(scene, cycleIds, roomWeights, parameters);
     const regionsMeta = regionsWithMetadata(scene, regions);
-    const score = scoreRooms(scene, regionsMeta, roomWeights);
+    const { score, scoreParts } = scoreRooms(scene, regionsMeta, roomWeights);
     return {
       score,
+      scoreParts,
       scene: scene.clone(),
       regions: regions,
       regionAreas: new Map(

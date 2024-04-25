@@ -12,8 +12,8 @@ import { EvolveResult, evolve } from "./genetic";
 
 const STARTING_POPULATION = 100;
 const EVOLVE_PARAMS = {
-  numGenerations: 20,
-  startingMutationRate: 0.05,
+  numGenerations: 30,
+  startingMutationRate: 0.1,
   survivalRate: 0.2,
   cullPopulation: 0.95,
   mutationAnnealing: 0.9,
@@ -112,7 +112,7 @@ if (queryString === '?evolve') {
     const fewerResults = allResults.slice(0, 20);
     manyRenderer.render(
       fewerResults.map((result) => result.scene),
-      fewerResults.map((result) => `${result.score.toFixed(0)} (${result.generation})`)
+      fewerResults.map((result) => `${result.score.toFixed(0)} (gen: ${result.generation})\narea ${result.scoreParts.area.toFixed(0)}\nsquare ${result.scoreParts.roundness.toFixed(0)}\nangles ${result.scoreParts.angles.toFixed(0)}]`)
     );
 
     clearRendering(paper1);
