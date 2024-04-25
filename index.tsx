@@ -10,7 +10,14 @@ import { setup } from "paper/dist/paper-core";
 import { PartitionResult, createRoomPartitioner, defaultManyRooms, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms, weightForRegionLookup } from "./rooms";
 import { EvolveResult, evolve } from "./genetic";
 
-const STARTING_POPULATION = 400;
+const STARTING_POPULATION = 100;
+const EVOLVE_PARAMS = {
+  numGenerations: 20,
+  startingMutationRate: 0.05,
+  survivalRate: 0.2,
+  cullPopulation: 0.95,
+  mutationAnnealing: 0.9,
+};
 
 const queryString = window.location.search;
 if (queryString === '?evolve') {
@@ -68,12 +75,7 @@ if (queryString === '?evolve') {
     }
 
     evolver =
-      evolve<PartitionResult>(allResults, runner, startingPopulation, {
-        numGenerations: 20,
-        mutationRate: 0.05,
-        survivalRate: 0.2,
-        cullPopulation: 0.95,
-      });
+      evolve<PartitionResult>(allResults, runner, startingPopulation, EVOLVE_PARAMS);
   }
 
   function continueEvolving() {
@@ -203,12 +205,7 @@ else if (queryString === '?rooms') {
       const startingPopulation = generateRandomCuts(STARTING_POPULATION, roomsDefintion.numRooms(i), 'asdf');
 
       const allResults: Array<EvolveResult<PartitionResult>> = [];
-      const generator = evolve<PartitionResult>(allResults, runner, startingPopulation, {
-        numGenerations: 20,
-        mutationRate: 0.05,
-        survivalRate: 0.2,
-        cullPopulation: 0.95,
-      });
+      const generator = evolve<PartitionResult>(allResults, runner, startingPopulation, EVOLVE_PARAMS);
 
       return { results: allResults, generator };
     });

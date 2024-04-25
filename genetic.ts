@@ -10,8 +10,9 @@ export type Initializer = (seed: number) => Array<number>;
 
 export type GeneticParameters = {
   numGenerations: number;
-  mutationRate: number;
+  startingMutationRate: number;
   survivalRate: number;
+  mutationAnnealing: number;
   cullPopulation: number;
 };
 
@@ -28,10 +29,17 @@ export function* evolve<T extends HasScore>(
   parameters: GeneticParameters
 ) {
   const random = seedrandom("seed");
-  const { numGenerations, mutationRate, survivalRate, cullPopulation } =
-    parameters;
+  const {
+    numGenerations,
+    startingMutationRate,
+    survivalRate,
+    cullPopulation,
+    mutationAnnealing,
+  } = parameters;
   const startingPopuplationSize = population.length;
+
   let currentPopulationSize = startingPopuplationSize;
+  let currentMutationRate = startingMutationRate;
 
   for (let i = 0; i < numGenerations; i++) {
     for (const parameters of population) {
@@ -51,12 +59,13 @@ export function* evolve<T extends HasScore>(
       Math.ceil(survivalRate * currentPopulationSize)
     );
 
-    // console.log(
-    //   `generation ${i + 1} w/ population size ${currentPopulationSize} and ${
-    //     survivors.length
-    //   } survivors`
-    // );
+    console.log(
+      `generation ${i + 1} w/ population size ${currentPopulationSize} and ${
+        survivors.length
+      } survivors and mutation rate ${currentMutationRate}`
+    );
     currentPopulationSize = Math.ceil(currentPopulationSize * cullPopulation);
+    currentMutationRate = currentMutationRate * mutationAnnealing;
 
     population = [];
     for (let i = 0; i < currentPopulationSize; i++) {
@@ -66,7 +75,7 @@ export function* evolve<T extends HasScore>(
       const { parameters } = survivors[survivorIndex];
 
       const newParameters = parameters.map((parameter) => {
-        const delta = (random() - 0.5) * mutationRate;
+        const delta = (random() - 0.5) * currentMutationRate;
         return parameter + delta;
       });
       population.push(newParameters);

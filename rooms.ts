@@ -424,7 +424,7 @@ export function scoreRooms(
 
   // console.log(`correct num rooms score: ${numRoomsScore}`);
 
-  const overall = Math.floor(
+  const overall = Math.ceil(
     (avg(areaScores) + avg(roundnessScores)) * numRoomsScore * 100
   );
   return overall;
