@@ -114,14 +114,20 @@ export function renderPoints(scope: paper.PaperScope, scene: Scene) {
   }
 }
 
-export function renderEdges(scope: paper.PaperScope, scene: Scene) {
+export function renderEdges(
+  scope: paper.PaperScope,
+  scene: Scene,
+  options: {
+    edgeWidth?: number;
+  } = {}
+) {
   for (const [edge, [point1Id, point2Id]] of scene.edges()) {
     const point1 = scene.getPoint(point1Id);
     const point2 = scene.getPoint(point2Id);
 
     const line = new paper.Path.Line(point1, point2);
     line.strokeColor = new paper.Color(edgeColorForEdge(edge));
-    line.strokeWidth = 2;
+    line.strokeWidth = options.edgeWidth !== undefined ? options.edgeWidth : 2;
     line.strokeCap = "round";
     scope.project.activeLayer.addChild(line);
 
@@ -152,7 +158,10 @@ export function renderEdges(scope: paper.PaperScope, scene: Scene) {
 export function renderRegions(
   scope: paper.PaperScope,
   regions: Map<RegionId, Array<PointId>>,
-  scene: Scene
+  scene: Scene,
+  options: {
+    regionNamer?: (regionId: RegionId) => string;
+  } = {}
 ) {
   for (const [i, [regionId, cycle]] of enumerateIndexAndItem(regions)) {
     const regionPath = new paper.Path();
@@ -163,7 +172,12 @@ export function renderRegions(
     regionPath.fillColor = new paper.Color(faceColorForRegion(regionId));
     scope.project.activeLayer.addChild(regionPath);
 
-    const label = regionId.length < 15 ? `${i}:${regionId}` : `${i}`;
+    const label = options.regionNamer
+      ? options.regionNamer(regionId)
+      : regionId.length < 15
+      ? `${i}:${regionId}`
+      : `${i}`;
+
     const text = new paper.PointText(regionPath.interiorPoint);
     text.fontSize = 4;
     text.content = label;

@@ -2,16 +2,16 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene, defaultScene, singlePolygon } from "./scene";
 import { createFlattenedScene } from "./flatten";
-import { findRegions, sortedRegions } from "./regions";
+import { enumerateIndexAndItem, findRegions, sortedRegions } from "./regions";
 import { RenderManyScenes, clearRendering, renderEdges, renderHandles, renderPoints, renderRegions } from "./render";
 import { EditBehavior } from "./interactions";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea, debounce } from "./dom";
 import { setup } from "paper/dist/paper-core";
-import { PartitionResult, createRoomPartitioner, defaultManyRooms, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms } from "./rooms";
+import { PartitionResult, createRoomPartitioner, defaultManyRooms, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms, weightForRegionLookup } from "./rooms";
 import { EvolveResult, evolve } from "./genetic";
 
 const queryString = window.location.search;
-if (queryString === '?rooms') {
+if (queryString === '?evolve') {
   const containerEl = document.getElementById("container") as HTMLDivElement;
 
   const encodedTextArea = document.createElement("textarea");
@@ -40,8 +40,7 @@ if (queryString === '?rooms') {
   let flattened = new Scene();
   let regions = new Map<string, Array<string>>();
 
-  let bestScene: Scene | undefined = new Scene();
-  let bestRegions = new Map<string, Array<string>>();
+  let bestResult: EvolveResult<PartitionResult> | undefined = undefined;
 
   let allResults: Array<EvolveResult<PartitionResult>> = [];
 
@@ -53,8 +52,7 @@ if (queryString === '?rooms') {
     flattened = createFlattenedScene(scene);
     regions = findRegions(flattened);
 
-    bestScene = undefined;
-    bestRegions = new Map<string, Array<string>>();
+    bestResult = undefined;
 
     const cycle = sortedRegions(regions)[0];
     const roomWeights = roomsDefintion.roomWeights(0);
@@ -95,8 +93,7 @@ if (queryString === '?rooms') {
       }
     }
 
-    bestScene = allResults[0].scene;
-    bestRegions = allResults[0].regions;
+    bestResult = allResults[0];
   }
 
   let _generation = -1;
@@ -116,8 +113,16 @@ if (queryString === '?rooms') {
 
     clearRendering(paper1);
 
-    if (bestScene) {
-      renderRegions(paper1, bestRegions, bestScene);
+    if (bestResult) {
+      const bestScene = bestResult.scene;
+      const bestRegions = bestResult.regions;
+      const areas = bestResult.regionAreas;
+
+      const lookup = weightForRegionLookup(bestRegions, areas, roomsDefintion.roomWeights(0));
+
+      renderRegions(paper1, bestRegions, bestScene, {
+        regionNamer: (regionId) => `${lookup(regionId)}`
+      });
       renderEdges(paper1, bestScene);
     } else {
       renderEdges(paper1, scene);
@@ -140,7 +145,7 @@ if (queryString === '?rooms') {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-else {
+else if (queryString === '?rooms') {
   const containerEl = document.getElementById("container") as HTMLDivElement;
 
   const encodedTextArea = document.createElement("textarea");
@@ -170,12 +175,7 @@ else {
     generator: ReturnType<typeof evolve<PartitionResult>>
   }>();
 
-  let _generation = -1;
   function startUpdating() {
-    if (_generation === scene.generation()) {
-      return;
-    }
-
     _generation = scene.generation();
 
     flattened = createFlattenedScene(scene);
@@ -190,7 +190,7 @@ else {
     evolvers = sorted.map((cycle, i) => {
       const roomWeights = roomsDefintion.roomWeights(i);
       const runner = createRoomPartitioner(flattened.subset(cycle), cycle, roomWeights);
-      const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(0), 'asdf');
+      const startingPopulation = generateRandomCuts(100, roomsDefintion.numRooms(i), 'asdf');
 
       const allResults: Array<EvolveResult<PartitionResult>> = [];
       const generator = evolve<PartitionResult>(allResults, runner, startingPopulation, {
@@ -221,26 +221,39 @@ else {
     }
   }
 
+  let _generation = -1;
   function render() {
-    startUpdating();
+    if (_generation !== scene.generation()) {
+      startUpdating();
+      _generation = scene.generation();
+    }
     continueUpdating();
 
     clearRendering(paper1);
-    renderPoints(paper1, flattened);
-    renderHandles(paper1, editBehavior1.renderHints());
 
     if (evolvers.length === 0) {
       renderRegions(paper1, regions, flattened);
       renderEdges(paper1, flattened);
     } else {
-      for (const evolver of evolvers) {
+      for (const [i, evolver] of enumerateIndexAndItem(evolvers)) {
         const bestScene = evolver.results[0].scene;
         const bestRegions = evolver.results[0].regions;
+        const areas = evolver.results[0].regionAreas;
 
-        renderRegions(paper1, bestRegions, bestScene);
-        renderEdges(paper1, bestScene);
+        const lookup = weightForRegionLookup(bestRegions, areas, roomsDefintion.roomWeights(i));
+
+        renderRegions(paper1, bestRegions, bestScene, {
+          regionNamer: (regionId) => `${lookup(regionId)}`
+        });
+        renderEdges(paper1, bestScene, {
+          edgeWidth: 1,
+        });
+        renderEdges(paper1, flattened);
       }
     }
+
+    renderPoints(paper1, flattened);
+    renderHandles(paper1, editBehavior1.renderHints());
   }
 
   setInterval(() => {
@@ -253,5 +266,62 @@ else {
     startUpdating();
   });
 
+  roomsDefintion.addListener(startUpdating);
+
   const editBehavior1 = new EditBehavior(paper1, scene);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+else {
+  const containerEl = document.getElementById("container") as HTMLDivElement;
+
+  const encodedTextArea = document.createElement("textarea");
+  encodedTextArea.style.flex = "0.2";
+  containerEl.appendChild(encodedTextArea);
+
+  const div1El = document.createElement("div");
+  containerEl.appendChild(div1El);
+
+  const div2El = document.createElement("div");
+  containerEl.appendChild(div2El);
+
+  const paper1 = setupPaper(div1El);
+  const paper2 = setupPaper(div2El);
+
+  const scene = defaultScene();
+  setupEncodedTextArea(encodedTextArea, scene);
+
+  let flattened = new Scene();
+  let regions = new Map<string, Array<string>>();
+
+  function update() {
+    flattened = createFlattenedScene(scene);
+    regions = findRegions(flattened);
+  }
+
+  function render() {
+    clearRendering(paper1);
+    renderEdges(paper1, scene);
+    renderPoints(paper1, scene);
+    renderHandles(paper1, editBehavior1.renderHints());
+
+    clearRendering(paper2);
+    renderRegions(paper2, regions, flattened);
+    renderEdges(paper2, flattened);
+    renderPoints(paper2, flattened);
+    renderHandles(paper2, editBehavior2.renderHints());
+  }
+
+  setInterval(() => {
+    render();
+  }, 1000 / 60);
+
+  scene.addListener(update);
+  update();
+
+  const editBehavior1 = new EditBehavior(paper1, scene);
+  const editBehavior2 = new EditBehavior(paper2, scene);
 }

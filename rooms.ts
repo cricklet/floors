@@ -6,7 +6,12 @@ import {
   splitEdge,
   flattenScene,
 } from "./flatten";
-import { RegionId, enumerateIndexAndItem, findRegions } from "./regions";
+import {
+  RegionId,
+  enumerateIndexAndItem,
+  findRegions,
+  sortedRegions,
+} from "./regions";
 import { EdgeId, PointId, Scene } from "./scene";
 import { Runner } from "./genetic";
 
@@ -21,14 +26,15 @@ export class RoomsDefinition {
 
   roomWeights(i: number): ReadonlyArray<number> {
     if (i < this._roomsPerRegion.length) {
-      return this._roomsPerRegion[i];
+      const room = this._roomsPerRegion[i];
+      return room.length > 0 ? room : [1];
     } else {
-      return [];
+      return [1];
     }
   }
 
   numRooms(i: number): number {
-    return this.roomWeights(i).length;
+    return this.roomWeights(i).length || 1;
   }
 
   addListener(listener: () => void) {
@@ -66,7 +72,7 @@ export function defaultRoomsDefinition(): RoomsDefinition {
 }
 
 export function defaultManyRooms(): RoomsDefinition {
-  return new RoomsDefinition([[1, 1, 1, 1], [2, 1], [1], [1, 1, 1]]);
+  return new RoomsDefinition([[1, 1, 1, 1], [2, 1], [1], [3, 1, 1]]);
 }
 
 function* iterateEdgesAndCumulativeDistance(
@@ -320,12 +326,19 @@ function avg(iter: Iterable<number>): number {
   return total / count;
 }
 
-export function scoreRooms(
+type RegionWithMetadata = {
+  regionId: RegionId;
+  pointIds: Array<PointId>;
+  path: paper.Path;
+  circumference: number;
+  area: number;
+};
+
+function regionsWithMetadata(
   scene: Scene,
-  regions: Map<RegionId, Array<PointId>>,
-  weights: ReadonlyArray<number>
-): number {
-  const sortedRegions: Array<{
+  regions: Map<RegionId, Array<PointId>>
+): Array<RegionWithMetadata> {
+  const results: Array<{
     regionId: RegionId;
     pointIds: Array<PointId>;
     path: paper.Path;
@@ -344,9 +357,18 @@ export function scoreRooms(
     const circumference = circumferenceOfCycle(
       pointIds.map((pointId) => scene.getPoint(pointId))
     );
-    sortedRegions.push({ regionId, pointIds, path, circumference, area });
+    results.push({ regionId, pointIds, path, circumference, area });
   }
 
+  return results;
+}
+
+export function scoreRooms(
+  scene: Scene,
+  regions: ReadonlyArray<RegionWithMetadata>,
+  weights: ReadonlyArray<number>
+): number {
+  const sortedRegions = regions.slice();
   sortedRegions.sort((a, b) => a.area - b.area);
   const sortedWeights = weights.slice().sort((a, b) => a - b);
 
@@ -431,6 +453,7 @@ export function generateRooms(
 export type PartitionResult = {
   scene: Scene;
   regions: Map<RegionId, Array<PointId>>;
+  regionAreas: Map<RegionId, number>;
   score: number;
 };
 
@@ -462,11 +485,34 @@ export function createRoomPartitioner(
     const scene = source.clone();
 
     const regions = generateRooms(scene, cycleIds, roomWeights, parameters);
-    const score = scoreRooms(scene, regions, roomWeights);
+    const regionsMeta = regionsWithMetadata(scene, regions);
+    const score = scoreRooms(scene, regionsMeta, roomWeights);
     return {
       score,
       scene: scene.clone(),
       regions: regions,
+      regionAreas: new Map(
+        regionsMeta.map((region) => [region.regionId, region.area])
+      ),
     };
   };
+}
+
+export function weightForRegionLookup(
+  regions: Map<RegionId, Array<PointId>>,
+  areas: Map<RegionId, number>,
+  weights: ReadonlyArray<number>
+): (regionId: RegionId) => number {
+  const regionsAndAreas: Array<[RegionId, number]> = [...regions.keys()].map(
+    (regionId) => [regionId, areas.get(regionId)!]
+  );
+  regionsAndAreas.sort((a, b) => a[1] - b[1]);
+  console.log(regionsAndAreas);
+
+  const lookup: Map<RegionId, number> = new Map();
+  for (const [[regionId, _], weight] of zip(regionsAndAreas, weights)) {
+    lookup.set(regionId, weight);
+  }
+
+  return (regionId: RegionId) => lookup.get(regionId)!;
 }
