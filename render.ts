@@ -201,25 +201,27 @@ export class RenderManyScenes {
   render(scenes: Array<Scene>, labels: Array<string>) {
     this._clear();
 
-    const width = this._containerEl.clientWidth;
+    const width = Math.floor(this._containerEl.clientWidth);
 
     const gap = 8;
 
     const gridSize = Math.min(3, Math.ceil(Math.sqrt(scenes.length)));
-    let cellWidth = (width - gap * (gridSize - 1)) / gridSize;
+    let cellWidth = Math.ceil(width - gap * (gridSize - 1)) / gridSize;
     let cellHeight = cellWidth;
 
-    const defaultZoom = 3;
-    const gridZoom = (1.2 * (defaultZoom * cellWidth)) / width;
+    const gridZoom = cellWidth / 200;
+    console.log("gridZoom", gridZoom, width, cellWidth);
 
     for (const [i, scene] of enumerateIndexAndItem(scenes)) {
       const divEl = document.createElement("div");
-      divEl.style.width = `${cellWidth}px`;
+      divEl.style.width = `calc(100% / ${gridSize} - ${gap}px * ${
+        gridSize - 1
+      } / ${gridSize})`;
       divEl.style.height = `${cellHeight}px`;
       this._containerEl.appendChild(divEl);
 
       const labelEl = document.createElement("div");
-      labelEl.className = "label"
+      labelEl.className = "label";
       labelEl.textContent = labels[i];
       divEl.appendChild(labelEl);
 

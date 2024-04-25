@@ -93,13 +93,6 @@ if (queryString === '?rooms') {
 
     bestScene = allResults[0].scene;
     bestRegions = allResults[0].regions;
-
-    const fewerResults = allResults.slice(0, 20);
-
-    manyRenderer.render(
-      fewerResults.map((result) => result.scene),
-      fewerResults.map((result) => `${result.score.toFixed(0)} (${result.generation})`)
-    );
   }
 
   let _generation = -1;
@@ -110,6 +103,12 @@ if (queryString === '?rooms') {
     }
 
     continueEvolving();
+
+    const fewerResults = allResults.slice(0, 20);
+    manyRenderer.render(
+      fewerResults.map((result) => result.scene),
+      fewerResults.map((result) => `${result.score.toFixed(0)} (${result.generation})`)
+    );
 
     clearRendering(paper1);
 
@@ -183,6 +182,10 @@ else {
 
   scene.addListener(update);
   update();
+
+  window.addEventListener("resize", () => {
+    update();
+  });
 
   const editBehavior1 = new EditBehavior(paper1, scene);
   const editBehavior2 = new EditBehavior(paper2, scene);
