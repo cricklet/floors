@@ -78,10 +78,14 @@ if (queryString === '?evolve') {
       evolve<PartitionResult>(allResults, runner, startingPopulation, EVOLVE_PARAMS);
   }
 
+  let _evolveGeneration = 0;
+  let _lastRenderedEvolveGeneration = -1;
   function continueEvolving() {
     if (!evolver) {
       return;
     }
+
+    _evolveGeneration++;
 
     const startTime = Date.now();
 
@@ -109,11 +113,14 @@ if (queryString === '?evolve') {
 
     continueEvolving();
 
-    const fewerResults = allResults.slice(0, 20);
-    manyRenderer.render(
-      fewerResults.map((result) => result.scene),
-      fewerResults.map((result) => `${result.score.toFixed(0)} (gen: ${result.generation})\narea ${result.scoreParts.area.toFixed(0)}\nsquare ${result.scoreParts.roundness.toFixed(0)}\nangles ${result.scoreParts.angles.toFixed(0)}]`)
-    );
+    if (_lastRenderedEvolveGeneration !== _evolveGeneration) {
+      const fewerResults = allResults.slice(0, 30);
+      manyRenderer.render(
+        fewerResults.map((result) => result.scene),
+        fewerResults.map((result) => `${result.score.toFixed(0)} (gen: ${result.generation})\narea ${result.scoreParts.area.toFixed(0)}\nsquare ${result.scoreParts.roundness.toFixed(0)}\nangles ${result.scoreParts.angles.toFixed(0)}]`)
+      );
+      _lastRenderedEvolveGeneration = _evolveGeneration;
+    }
 
     clearRendering(paper1);
 
