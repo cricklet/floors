@@ -1,3 +1,8 @@
+<div id="tabs">
+  <a id="home-link" href="index.html">Home</a>
+  <a id="graph-link" href="index.html?graph">Graph</a>
+  <a id="evolve-link" href="index.html?evolve">Evolve</a>
+</div>
 
 <div id="container">
 </div>
@@ -6,10 +11,12 @@
   :root {
     --black: #264653;
     --green: #2A9D8F;
+    --light-green: #7dc7be;
     --orange: #F4A261;
     --red: #E76F51;
     --beige: #e2d7b7;
     --white: #ece8de;
+    --off-white: #b2d0d0;
   }
 
   body {
@@ -20,6 +27,33 @@
 
   * {
     box-sizing: border-box;
+  }
+
+  #tabs {
+    padding: 8px;
+    background-color: #164b4a;
+    border-bottom: 1px solid var(--black);
+
+    display: flex;
+    gap: 8px;
+  }
+
+  #tabs>a {
+    padding: 4px;
+    border-radius: 4px;
+    background-color: var(--light-green);
+    color: var(--black);
+    text-decoration: none;
+    font-family: sans-serif;
+  }
+
+  #tabs>a:hover {
+    filter: brightness(1.05);
+  }
+
+  #tabs>a.selected {
+    background-color: var(--white);
+    color: var(--black);
   }
 
   #container {
@@ -58,17 +92,17 @@
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    overflow-y: scroll!important;
+    overflow-y: scroll !important;
     gap: 8px;
   }
 
   .many>div {
-    position:relative;
+    position: relative;
     overflow: hidden;
   }
 
   .label {
-    position:absolute;
+    position: absolute;
     padding: 8px;
     font-family: sans-serif;
     white-space: pre;

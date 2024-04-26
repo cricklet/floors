@@ -19,8 +19,8 @@ const EVOLVE_PARAMS = {
   mutationAnnealing: 0.9,
 };
 
-const queryString = window.location.search;
-if (queryString === '?evolve') {
+function setupEvolve() {
+
   const containerEl = document.getElementById("container") as HTMLDivElement;
 
   const encodedTextArea = document.createElement("textarea");
@@ -160,11 +160,8 @@ if (queryString === '?evolve') {
   const editBehavior1 = new EditBehavior(paper1, scene);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+function setupRooms() {
 
-else if (queryString === '?rooms') {
   const containerEl = document.getElementById("container") as HTMLDivElement;
 
   const encodedTextArea = document.createElement("textarea");
@@ -290,11 +287,7 @@ else if (queryString === '?rooms') {
   const editBehavior1 = new EditBehavior(paper1, scene);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-else {
+function setupGraph() {
   const containerEl = document.getElementById("container") as HTMLDivElement;
 
   const encodedTextArea = document.createElement("textarea");
@@ -343,4 +336,16 @@ else {
 
   const editBehavior1 = new EditBehavior(paper1, scene);
   const editBehavior2 = new EditBehavior(paper2, scene);
+}
+
+const queryString = window.location.search;
+if (queryString === '?evolve') {
+  document.getElementById("evolve-link")!.className = "selected";
+  setupEvolve();
+} else if (queryString === '?graph') {
+  document.getElementById("graph-link")!.className = "selected";
+  setupGraph();
+} else {
+  document.getElementById("home-link")!.className = "selected";
+  setupRooms();
 }
