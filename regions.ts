@@ -267,9 +267,7 @@ export function findRegions(scene: Scene): Map<RegionId, Array<PointId>> {
     const brute = findRegionsBrute(scene);
 
     if (fast.size !== brute.size) {
-      throw new Error(
-        `fast.size ${fast.size} !== brute.size ${brute.size}`
-      );
+      throw new Error(`fast.size ${fast.size} !== brute.size ${brute.size}`);
     }
 
     for (const [regionId, cycle] of brute) {
