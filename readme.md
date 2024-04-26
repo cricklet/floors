@@ -1,5 +1,3 @@
-![example](https://i.imgur.com/SeNxXuM.gif)
-
 ```
 -------------------------------------------------------------------------------
 File                             blank        comment           code
