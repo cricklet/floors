@@ -1,5 +1,5 @@
 import paper from "paper";
-import { findAllCycles } from "./cycles";
+import { findAllCycles } from "./dfs";
 import { EdgeId, PointId, Scene } from "./scene";
 import { faceColorForRegion } from "./render";
 import { windingOfCycle } from "./rooms";
