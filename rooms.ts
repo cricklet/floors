@@ -14,7 +14,7 @@ import {
   sortedRegions,
 } from "./regions";
 import { EdgeId, PointId, Scene } from "./scene";
-import { Runner } from "./genetic";
+import { Runner } from "./evolve";
 
 export class RoomsDefinition {
   private _roomsPerRegion: Array<Array<number>>;

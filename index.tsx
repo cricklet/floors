@@ -4,11 +4,11 @@ import { EdgeId, PointId, Scene, defaultScene, singlePolygon } from "./scene";
 import { createFlattenedScene } from "./flatten";
 import { enumerateIndexAndItem, findRegions, sortedRegions } from "./regions";
 import { RenderManyScenes, clearRendering, renderEdges, renderHandles, renderPoints, renderRegions } from "./render";
-import { EditBehavior } from "./interactions";
+import { EditBehavior } from "./edit";
 import { setupPaper, setupEncodedTextArea, setupRoomsTextArea, debounce } from "./dom";
 import { setup } from "paper/dist/paper-core";
 import { PartitionResult, createRoomPartitioner, defaultManyRooms, defaultRoomsDefinition, generateRandomCuts, generateRooms, scoreRooms, weightForRegionLookup } from "./rooms";
-import { EvolveResult, evolve } from "./genetic";
+import { EvolveResult, evolve } from "./evolve";
 
 const STARTING_POPULATION = 100;
 const EVOLVE_PARAMS = {

@@ -1,7 +1,7 @@
 import paper from "paper";
 import { EdgeId, PointId, Scene } from "./scene";
 import { RegionId, enumerateIndexAndItem } from "./regions";
-import { PointRenderState, RenderHint } from "./interactions";
+import { PointRenderState, RenderHint } from "./edit";
 
 const EDGE_COLORS = [
   "#005f73",
